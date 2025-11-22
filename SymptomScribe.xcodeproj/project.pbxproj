@@ -1,0 +1,622 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 90;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A3A7F93A2E36C5BE0078644A /* LLM in Frameworks */ = {isa = PBXBuildFile; productRef = A3A7F9392E36C5BE0078644A /* LLM */; };
+		A3D893832ED238DE00CC5560 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A3D893822ED238DE00CC5560 /* XCTest.framework */; platformFilter = ios; };
+		A3D893842ED238E700CC5560 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A3D893822ED238DE00CC5560 /* XCTest.framework */; platformFilter = ios; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		573365942CBE1CC100FFD29E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 573365762CBE1CBE00FFD29E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5733657D2CBE1CBE00FFD29E;
+			remoteInfo = HealthScribe;
+		};
+		5733659E2CBE1CC200FFD29E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 573365762CBE1CBE00FFD29E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5733657D2CBE1CBE00FFD29E;
+			remoteInfo = HealthScribe;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		5733657E2CBE1CBE00FFD29E /* SymptomScribe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SymptomScribe.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		573365932CBE1CC100FFD29E /* SymptomScribeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SymptomScribeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5733659D2CBE1CC200FFD29E /* SymptomScribeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SymptomScribeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A3D893822ED238DE00CC5560 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/iPhoneOS.platform/Developer/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A3D893852ED2398600CC5560 /* Exceptions for "SymptomScribeTests" folder in "SymptomScribe" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				HealthScribeTests.swift,
+			);
+			target = 5733657D2CBE1CBE00FFD29E /* SymptomScribe */;
+		};
+		A3D893862ED239B800CC5560 /* Exceptions for "SymptomScribeUITests" folder in "SymptomScribe" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				HealthScribeUITests.swift,
+				HealthScribeUITestsLaunchTests.swift,
+			);
+			target = 5733657D2CBE1CBE00FFD29E /* SymptomScribe */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A3EB95A42ED232C5002186C3 /* SymptomScribe */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SymptomScribe;
+			sourceTree = "<group>";
+		};
+		A3EB95E82ED23303002186C3 /* SymptomScribeTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A3D893852ED2398600CC5560 /* Exceptions for "SymptomScribeTests" folder in "SymptomScribe" target */,
+			);
+			path = SymptomScribeTests;
+			sourceTree = "<group>";
+		};
+		A3EB95EE2ED23315002186C3 /* SymptomScribeUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A3D893862ED239B800CC5560 /* Exceptions for "SymptomScribeUITests" folder in "SymptomScribe" target */,
+			);
+			path = SymptomScribeUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5733657B2CBE1CBE00FFD29E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				A3A7F93A2E36C5BE0078644A /* LLM in Frameworks */,
+			);
+		};
+		573365902CBE1CC100FFD29E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				A3D893832ED238DE00CC5560 /* XCTest.framework in Frameworks */,
+			);
+		};
+		5733659A2CBE1CC200FFD29E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				A3D893842ED238E700CC5560 /* XCTest.framework in Frameworks */,
+			);
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		573365752CBE1CBE00FFD29E = {
+			isa = PBXGroup;
+			children = (
+				A3EB95A42ED232C5002186C3 /* SymptomScribe */,
+				A3EB95EE2ED23315002186C3 /* SymptomScribeUITests */,
+				A3EB95E82ED23303002186C3 /* SymptomScribeTests */,
+				5733657F2CBE1CBE00FFD29E /* Products */,
+				A3BC195B2E20467A00CEEE61 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		5733657F2CBE1CBE00FFD29E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5733657E2CBE1CBE00FFD29E /* SymptomScribe.app */,
+				573365932CBE1CC100FFD29E /* SymptomScribeTests.xctest */,
+				5733659D2CBE1CC200FFD29E /* SymptomScribeUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A3BC195B2E20467A00CEEE61 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A3D893822ED238DE00CC5560 /* XCTest.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5733657D2CBE1CBE00FFD29E /* SymptomScribe */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 573365A72CBE1CC200FFD29E /* Build configuration list for PBXNativeTarget "SymptomScribe" */;
+			buildPhases = (
+				5733657A2CBE1CBE00FFD29E /* Sources */,
+				5733657B2CBE1CBE00FFD29E /* Frameworks */,
+				5733657C2CBE1CBE00FFD29E /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				A3EB95A42ED232C5002186C3 /* SymptomScribe */,
+				A3EB95E82ED23303002186C3 /* SymptomScribeTests */,
+				A3EB95EE2ED23315002186C3 /* SymptomScribeUITests */,
+			);
+			name = SymptomScribe;
+			packageProductDependencies = (
+				A3A7F9392E36C5BE0078644A /* LLM */,
+			);
+			productName = HealthScribe;
+			productReference = 5733657E2CBE1CBE00FFD29E /* SymptomScribe.app */;
+			productType = "com.apple.product-type.application";
+		};
+		573365922CBE1CC100FFD29E /* SymptomScribeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 573365AA2CBE1CC200FFD29E /* Build configuration list for PBXNativeTarget "SymptomScribeTests" */;
+			buildPhases = (
+				5733658F2CBE1CC100FFD29E /* Sources */,
+				573365902CBE1CC100FFD29E /* Frameworks */,
+				573365912CBE1CC100FFD29E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				573365952CBE1CC100FFD29E /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A3EB95A42ED232C5002186C3 /* SymptomScribe */,
+				A3EB95E82ED23303002186C3 /* SymptomScribeTests */,
+				A3EB95EE2ED23315002186C3 /* SymptomScribeUITests */,
+			);
+			name = SymptomScribeTests;
+			productName = HealthScribeTests;
+			productReference = 573365932CBE1CC100FFD29E /* SymptomScribeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		5733659C2CBE1CC200FFD29E /* SymptomScribeUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 573365AD2CBE1CC200FFD29E /* Build configuration list for PBXNativeTarget "SymptomScribeUITests" */;
+			buildPhases = (
+				573365992CBE1CC200FFD29E /* Sources */,
+				5733659A2CBE1CC200FFD29E /* Frameworks */,
+				5733659B2CBE1CC200FFD29E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5733659F2CBE1CC200FFD29E /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A3EB95A42ED232C5002186C3 /* SymptomScribe */,
+				A3EB95E82ED23303002186C3 /* SymptomScribeTests */,
+				A3EB95EE2ED23315002186C3 /* SymptomScribeUITests */,
+			);
+			name = SymptomScribeUITests;
+			productName = HealthScribeUITests;
+			productReference = 5733659D2CBE1CC200FFD29E /* SymptomScribeUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		573365762CBE1CBE00FFD29E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1540;
+				LastUpgradeCheck = 1540;
+				TargetAttributes = {
+					5733657D2CBE1CBE00FFD29E = {
+						CreatedOnToolsVersion = 15.4;
+					};
+					573365922CBE1CC100FFD29E = {
+						CreatedOnToolsVersion = 15.4;
+						TestTargetID = 5733657D2CBE1CBE00FFD29E;
+					};
+					5733659C2CBE1CC200FFD29E = {
+						CreatedOnToolsVersion = 15.4;
+						TestTargetID = 5733657D2CBE1CBE00FFD29E;
+					};
+				};
+			};
+			buildConfigurationList = 573365792CBE1CBE00FFD29E /* Build configuration list for PBXProject "SymptomScribe" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 573365752CBE1CBE00FFD29E;
+			packageReferences = (
+				A3A7F9382E36C5BE0078644A /* XCRemoteSwiftPackageReference "LLM.swift" */,
+			);
+			preferredProjectObjectVersion = 90;
+			productRefGroup = 5733657F2CBE1CBE00FFD29E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5733657D2CBE1CBE00FFD29E /* SymptomScribe */,
+				573365922CBE1CC100FFD29E /* SymptomScribeTests */,
+				5733659C2CBE1CC200FFD29E /* SymptomScribeUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5733657C2CBE1CBE00FFD29E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		573365912CBE1CC100FFD29E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		5733659B2CBE1CC200FFD29E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5733657A2CBE1CBE00FFD29E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		5733658F2CBE1CC100FFD29E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		573365992CBE1CC200FFD29E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		573365952CBE1CC100FFD29E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5733657D2CBE1CBE00FFD29E /* SymptomScribe */;
+			targetProxy = 573365942CBE1CC100FFD29E /* PBXContainerItemProxy */;
+		};
+		5733659F2CBE1CC200FFD29E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5733657D2CBE1CBE00FFD29E /* SymptomScribe */;
+			targetProxy = 5733659E2CBE1CC200FFD29E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		573365A52CBE1CC200FFD29E /* Debug configuration for PBXProject "SymptomScribe" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Your app requires microphone access to record audio.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Your app requires speech recognition access to transcribe speech.";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		573365A62CBE1CC200FFD29E /* Release configuration for PBXProject "SymptomScribe" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Your app requires microphone access to record audio.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Your app requires speech recognition access to transcribe speech.";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		573365A82CBE1CC200FFD29E /* Debug configuration for PBXNativeTarget "SymptomScribe" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = SymptomScribe/SymptomScribe.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"SymptomScribe/Preview Content\"";
+				DEVELOPMENT_TEAM = JDDHRHL9TV;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SymptomScribe;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app uses HealthKit to display and interpret various health metrics such as heart rate, step count, and sleep data.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app requires access to the microphone to record your symptoms.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "This app requires access to speech recognition to transcribe your symptoms.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.samay.SymptomScribe;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		573365A92CBE1CC200FFD29E /* Release configuration for PBXNativeTarget "SymptomScribe" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = SymptomScribe/SymptomScribe.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"SymptomScribe/Preview Content\"";
+				DEVELOPMENT_TEAM = JDDHRHL9TV;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SymptomScribe;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app uses HealthKit to display and interpret various health metrics such as heart rate, step count, and sleep data.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app requires access to the microphone to record your symptoms.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "This app requires access to speech recognition to transcribe your symptoms.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.samay.SymptomScribe;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		573365AB2CBE1CC200FFD29E /* Debug configuration for PBXNativeTarget "SymptomScribeTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GFSQ62MAV4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = GandA.HealthScribeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HealthScribe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HealthScribe";
+			};
+			name = Debug;
+		};
+		573365AC2CBE1CC200FFD29E /* Release configuration for PBXNativeTarget "SymptomScribeTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GFSQ62MAV4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = GandA.HealthScribeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HealthScribe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HealthScribe";
+			};
+			name = Release;
+		};
+		573365AE2CBE1CC200FFD29E /* Debug configuration for PBXNativeTarget "SymptomScribeUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GFSQ62MAV4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = GandA.HealthScribeUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = HealthScribe;
+			};
+			name = Debug;
+		};
+		573365AF2CBE1CC200FFD29E /* Release configuration for PBXNativeTarget "SymptomScribeUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GFSQ62MAV4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = GandA.HealthScribeUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = HealthScribe;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		573365792CBE1CBE00FFD29E /* Build configuration list for PBXProject "SymptomScribe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				573365A52CBE1CC200FFD29E /* Debug configuration for PBXProject "SymptomScribe" */,
+				573365A62CBE1CC200FFD29E /* Release configuration for PBXProject "SymptomScribe" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		573365A72CBE1CC200FFD29E /* Build configuration list for PBXNativeTarget "SymptomScribe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				573365A82CBE1CC200FFD29E /* Debug configuration for PBXNativeTarget "SymptomScribe" */,
+				573365A92CBE1CC200FFD29E /* Release configuration for PBXNativeTarget "SymptomScribe" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		573365AA2CBE1CC200FFD29E /* Build configuration list for PBXNativeTarget "SymptomScribeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				573365AB2CBE1CC200FFD29E /* Debug configuration for PBXNativeTarget "SymptomScribeTests" */,
+				573365AC2CBE1CC200FFD29E /* Release configuration for PBXNativeTarget "SymptomScribeTests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		573365AD2CBE1CC200FFD29E /* Build configuration list for PBXNativeTarget "SymptomScribeUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				573365AE2CBE1CC200FFD29E /* Debug configuration for PBXNativeTarget "SymptomScribeUITests" */,
+				573365AF2CBE1CC200FFD29E /* Release configuration for PBXNativeTarget "SymptomScribeUITests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A3A7F9382E36C5BE0078644A /* XCRemoteSwiftPackageReference "LLM.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/eastriverlee/LLM.swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.4.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A3A7F9392E36C5BE0078644A /* LLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A3A7F9382E36C5BE0078644A /* XCRemoteSwiftPackageReference "LLM.swift" */;
+			productName = LLM;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 573365762CBE1CBE00FFD29E /* Project object */;
+}

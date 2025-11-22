@@ -1,0 +1,12 @@
+INSTRUCTIONS:
+
+download the .gguf file from this repo: https://huggingface.co/TheBloke/phi-2-GGUF/tree/main
+
+exact name of .gguf file to be downloaded: phi-2.Q4_K_M.gguf
+
+once downloaded, drag into Xcode project nav, add to SymptomScribe target...
+
+add this package dependency in Xcode: https://github.com/eastriverlee/LLM.swift.git
+
+
+

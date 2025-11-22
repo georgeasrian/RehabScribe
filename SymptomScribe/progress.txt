@@ -1,0 +1,7 @@
+PROGRESS:
+
+updated prompt which is fine tuned for more consistent results. Helper method added to extract JSON object more consistently. Mutliple times the model will output proper results as seen in Xcode terminal, but app will run into error of not being able to find the proper JSON format. Thus, this method should help reduce those errors.
+
+5 additional exercises that were recommended were added into the backend... new feature of "matched_exercise" which indicates whether exercise was matched to one in the backend.
+
+Need to fix the Notes View to accept the new feature and also fix the datatype it takes for different elements.
