@@ -3,7 +3,7 @@
 //  SymptomScribe
 //
 //  Created by Aashni Shah on 9/29/24.
-//  Modified by Samay Prabhu on 08/03/25
+//  Modified by Samay Prabhu on 11/22/25
 //
 
 import SwiftUI
@@ -25,6 +25,7 @@ struct RecordView: View {
     
     var body: some View {
         VStack(spacing: 20) {
+            
             // Status Message During Recording
             if isRecording {
                 Text(statusMessage)
@@ -81,9 +82,7 @@ struct RecordView: View {
             .padding(.horizontal)
             
             // Submit Button
-            Button(action: {
-                submitRecording()
-            }) {
+            Button(action: submitRecording) {
                 Text("Submit")
                     .frame(minWidth: 0, maxWidth: .infinity)
                     .padding()
@@ -94,32 +93,32 @@ struct RecordView: View {
             .accessibilityLabel("Submit Button")
             .disabled(transcribedText.isEmpty || isRecording || isSubmitting)
             .padding(.horizontal)
-                        
-            // Text to Prompt the User for Recording
-            Text("We're here to help!")
+            
+            // Text to Prompt the User for Cardiology Recording
+            Text("Cardiology Symptom Recorder")
                 .font(.headline)
                 .padding(.top, 20)
             
-            //NEW TEXT TO DISPLAY ON SCREEN
             Text("""
-                Please include in your recording:
-                                
-                Name of exercise, weights, sets, reps (and whether until failure), rest time between sets, and whether you experienced pain or discomfort.
-                
-                If multiple exercises performed in one session, record separate notes.
-                
-                If recording workouts involving two weights (one per hand), please record the total combined weight lifted.
-                
-                Similarly, for exercises with one weight that are repeated on both sides, please multiply the weight lifted by two.
-                
+                Please describe any cardiac symptoms experienced, including:
+
+                - Chest pain (at rest or on exertion)  
+                - Palpitations or irregular heartbeats  
+                - Shortness of breath  
+                - Fatigue or lightheadedness  
+                - Sweating, nausea, or anxiety  
+                - Any dizziness or fainting episodes  
+
+                Try to provide context: when the symptom occurred, what triggered it, and how long it lasted.
+
+                Multiple episodes can be recorded in separate entries.
                 """)
                 .multilineTextAlignment(.leading)
                 .padding()
-
             
             Spacer()
             
-            // Navigation Button at the Top
+            // Navigation Button to View Recordings
             NavigationLink(destination: NotesListView()) {
                 Text("View Recordings")
                     .font(.headline)
@@ -130,10 +129,9 @@ struct RecordView: View {
                     .cornerRadius(10)
                     .padding(.horizontal)
             }
-
         }
         .padding()
-        .navigationTitle("Workout Recorder")
+        .navigationTitle("Cardiology Recorder")
         .alert(isPresented: $showingAlert) {
             Alert(
                 title: Text(alertTitle),
@@ -145,7 +143,7 @@ struct RecordView: View {
         }
     }
     
-    
+    // MARK: - Recording Functions
     func startRecording() {
         if speechRecognizer == nil {
             speechRecognizer = SpeechRecognizer()
@@ -155,12 +153,12 @@ struct RecordView: View {
                 if success {
                     self.isRecording = true
                     self.statusMessage = "Recording... Press Stop when done."
-                    self.submissionStatus = nil // Reset submission status
+                    self.submissionStatus = nil
                 } else {
                     self.alertTitle = "Permission Denied"
                     self.alertMessage = "Please enable speech recognition and microphone permissions in settings."
                     self.showingAlert = true
-                    self.speechRecognizer = nil // Release resources
+                    self.speechRecognizer = nil
                 }
             }
         }
@@ -169,12 +167,11 @@ struct RecordView: View {
     func stopRecording() {
         speechRecognizer?.stopTranscribing()
         transcribedText = speechRecognizer?.transcript.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        print("Transcribed Text: \(transcribedText)") // Debugging
+        print("Transcribed Text: \(transcribedText)")
         statusMessage = "Recording stopped. Review your transcription and press Submit."
         isRecording = false
-        speechRecognizer = nil // Release resources
+        speechRecognizer = nil
     }
-    
     
     func submitRecording() {
         guard !isSubmitting else { return }
@@ -191,14 +188,12 @@ struct RecordView: View {
                     return
                 }
 
-                // Parse JSON directly
                 guard let data = jsonString.data(using: .utf8),
                       let symptomsDict = try? JSONSerialization.jsonObject(with: data) as? [String: Bool] else {
                     self.showError("Invalid JSON format:\n\(jsonString)")
                     return
                 }
 
-                // Save directly to Core Data
                 let success = self.saveSymptoms(symptomsDict, transcribedText: self.transcribedText)
                 self.transcribedText = ""
                 if success {
@@ -213,18 +208,18 @@ struct RecordView: View {
             }
         }
     }
-
     
+    // MARK: - Core Data Saving
     private func saveSymptoms(_ symptoms: [String: Bool], transcribedText: String) -> Bool {
         let newNote = Note(context: viewContext)
         newNote.date = Date()
         newNote.transcribedText = transcribedText
-        newNote.summary = "" // optional
-
+        newNote.summary = ""
+        
         for (symptom, present) in symptoms {
             let entry = ResistanceTraining(context: viewContext)
             entry.note = newNote
-            entry.date = newNote.date // ✅ THIS FIXES THE SAVE ERROR
+            entry.date = newNote.date
             entry.exerciseName = symptom
             entry.painOrDiscomfortYN = present
             entry.setNumberInSequence = 0
@@ -235,7 +230,7 @@ struct RecordView: View {
             entry.muscleGroup = ""
             entry.restTimeInSecondsBeforeCurrentSetOptional = 0
         }
-
+        
         do {
             try viewContext.save()
             print("Note and symptoms saved successfully.")
@@ -247,10 +242,9 @@ struct RecordView: View {
     }
     
     private func showError(_ message: String) {
-          statusMessage = ""
-          alertTitle = "Error"
-          alertMessage = message
-          showingAlert = true
-      }
-
+        statusMessage = ""
+        alertTitle = "Error"
+        alertMessage = message
+        showingAlert = true
+    }
 }

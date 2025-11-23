@@ -1,26 +1,35 @@
+//
+//  ContentView.swift
+//  SymptomScribe
+//
+//  Updated for proper grouping and friendly names
+//
+
 import SwiftUI
 import CoreData
-import UIKit // Import UIKit to use UIActivityViewController
+import UIKit
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    
     @FetchRequest(
         entity: ResistanceTraining.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \ResistanceTraining.date, ascending: false)],
+        sortDescriptors: [
+            NSSortDescriptor(keyPath: \ResistanceTraining.resistanceType, ascending: false), // Symptoms first
+            NSSortDescriptor(keyPath: \ResistanceTraining.setNumberInSequence, ascending: true)
+        ],
         animation: .default)
     private var resistanceTrainings: FetchedResults<ResistanceTraining>
     
-    // State variables
     @State private var isGeneratingCSV = false
     
     var body: some View {
         NavigationView {
             VStack(alignment: .leading, spacing: 0) {
-                // Share button placed above the data table
+                
+                // Share button
                 VStack {
-                    Button(action: {
-                        shareCSV()
-                    }) {
+                    Button(action: shareCSV) {
                         HStack {
                             Image(systemName: "square.and.arrow.up")
                             Text("Export CSV")
@@ -31,31 +40,29 @@ struct ContentView: View {
                         .foregroundColor(.white)
                         .cornerRadius(8)
                     }
-                    .disabled(isGeneratingCSV) // Disable button while generating
+                    .disabled(isGeneratingCSV)
                 }
-                .frame(maxWidth: .infinity) // Make the VStack take up the entire width of the screen
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal)
                 .padding(.top, 8)
-                .padding(.bottom, 16) // Add spacing between button and table
+                .padding(.bottom, 16)
                 
-                // Loading message
                 if isGeneratingCSV {
-                    VStack {
-                        Text("Just a moment, we are generating your file.")
-                            .foregroundColor(.gray)
-                            .padding(.bottom, 16) // Space between message and table
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
+                    Text("Just a moment, we are generating your file.")
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 16)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
                 }
                 
-                // Data table starts here
+                // Group ResistanceTrainings by resistanceType
+                let groupedTrainings = Dictionary(grouping: resistanceTrainings, by: { $0.resistanceType ?? "Unknown" })
                 ScrollView(.horizontal) {
                     VStack(alignment: .leading, spacing: 0) {
-                        // Header Row
+                        // Header row
                         HStack {
                             Text("Date").bold().frame(width: 150)
-                            Text("Exercise Name").bold().frame(width: 120)
+                            Text("Exercise Name").bold().frame(width: 140)
                             Text("Muscle Group").bold().frame(width: 120)
                             Text("Total Weight Lifted").bold().frame(width: 140)
                             Text("Number of Reps").bold().frame(width: 120)
@@ -70,23 +77,33 @@ struct ContentView: View {
                         .background(Color(.systemGray6))
                         .border(Color.black, width: 1)
                         
-                        // Data Rows with Vertical Scrolling
                         ScrollView(.vertical) {
                             VStack(spacing: 0) {
-                                ForEach(resistanceTrainings, id: \ResistanceTraining.objectID) { training in
-                                    HStack {
-                                        Text(training.date ?? Date(), formatter: itemFormatter).frame(width: 150)
-                                        Text(training.exerciseName ?? "N/A").frame(width: 120)
-                                        Text(training.muscleGroup ?? "N/A").frame(width: 120)
-                                        Text(String(format: "%.2f lbs", training.totalWeightLifted)).frame(width: 140)
-                                        Text("\(training.numberOfRepsInSet)").frame(width: 120)
-                                        Text("\(training.setNumberInSequence)").frame(width: 120)
-                                        Text(String(format: "%.0f sec", training.restTimeInSecondsBeforeCurrentSetOptional?.doubleValue ?? 0.0)).frame(width: 120)
-                                        Text(training.resistanceType ?? "N/A").frame(width: 140)
-                                        Text(training.painOrDiscomfortYN ? "Yes" : "No").frame(width: 140)
-                                        Text(training.untilFailureYN ? "Yes" : "No").frame(width: 120)
+                                // Loop over grouped sections
+                                ForEach(groupedTrainings.keys.sorted(), id: \.self) { type in
+                                    Text(type)
+                                        .font(.headline)
+                                        .padding(.vertical, 4)
+                                        .padding(.horizontal)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(Color(.systemGray5))
+                                    
+                                    ForEach(groupedTrainings[type]!, id: \.objectID) { training in
+                                        HStack {
+                                            Text(training.date ?? Date(), formatter: itemFormatter).frame(width: 150)
+                                            Text(training.exerciseName ?? "N/A").frame(width: 140)
+                                            Text(training.muscleGroup ?? "N/A").frame(width: 120)
+                                            Text(String(format: "%.2f lbs", training.totalWeightLifted)).frame(width: 140)
+                                            Text("\(training.numberOfRepsInSet)").frame(width: 120)
+                                            Text("\(training.setNumberInSequence)").frame(width: 120)
+                                            Text(String(format: "%.0f sec", training.restTimeInSecondsBeforeCurrentSetOptional?.doubleValue ?? 0.0)).frame(width: 120)
+                                            Text(training.resistanceType ?? "N/A").frame(width: 140)
+                                            Text(training.painOrDiscomfortYN ? "Yes" : "No").frame(width: 140)
+                                            Text(training.untilFailureYN ? "Yes" : "No").frame(width: 120)
+                                        }
+                                        .padding(.horizontal)
+                                        .background(Color(UIColor.secondarySystemBackground))
                                     }
-                                    .padding(.horizontal)
                                 }
                             }
                         }
@@ -106,42 +123,39 @@ struct ContentView: View {
         return formatter
     }
     
-    // Function to generate CSV and present share sheet
+    // MARK: - CSV Export
+    
     func shareCSV() {
-        isGeneratingCSV = true // Show the loading message
+        isGeneratingCSV = true
         DispatchQueue.global(qos: .userInitiated).async {
-            let csvString = self.generateCSVString()
+            let csvString = generateCSVString()
             let tempDirectory = FileManager.default.temporaryDirectory
             let fileName = "ResistanceTrainings.csv"
             let csvURL = tempDirectory.appendingPathComponent(fileName)
             do {
                 try csvString.write(to: csvURL, atomically: true, encoding: .utf8)
                 DispatchQueue.main.async {
-                    isGeneratingCSV = false // Hide the loading message
-                    // Present the share sheet
+                    isGeneratingCSV = false
                     presentShareSheet(with: [csvURL])
                 }
             } catch {
                 print("Error writing CSV file: \(error)")
                 DispatchQueue.main.async {
-                    isGeneratingCSV = false // Hide the loading message
+                    isGeneratingCSV = false
                 }
             }
         }
     }
     
-    // Function to present the share sheet
     func presentShareSheet(with items: [Any]) {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let rootViewController = windowScene.windows.first?.rootViewController else {
             return
         }
-        
         let activityViewController = UIActivityViewController(activityItems: items, applicationActivities: nil)
-        rootViewController.present(activityViewController, animated: true, completion: nil)
+        rootViewController.present(activityViewController, animated: true)
     }
     
-    // Function to generate CSV string from Core Data
     func generateCSVString() -> String {
         var csvText = "Date,Exercise Name,Muscle Group,Total Weight Lifted,Number of Reps,Set Number,Rest Time,Resistance Type,Pain/Discomfort,Until Failure\n"
         
@@ -161,11 +175,9 @@ struct ContentView: View {
             let painOrDiscomfort = training.painOrDiscomfortYN ? "Yes" : "No"
             let untilFailure = training.untilFailureYN ? "Yes" : "No"
             
-            // Wrap each field in double quotes to handle commas and quotes in data
             let line = "\"\(dateString)\",\"\(exerciseName)\",\"\(muscleGroup)\",\"\(totalWeightLifted)\",\"\(numberOfReps)\",\"\(setNumber)\",\"\(restTime)\",\"\(resistanceType)\",\"\(painOrDiscomfort)\",\"\(untilFailure)\"\n"
             csvText += line
         }
         return csvText
     }
 }
-
