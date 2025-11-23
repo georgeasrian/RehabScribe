@@ -90,32 +90,56 @@ class LocalLLMProcessor {
             print("THE RAW OUTPUT:")
             print(rawOutput)
             
-            // --- POST-PROCESSING: extract only the first JSON object ---
-            var cleanedOutput: String? = nil
-            if let startIdx = rawOutput.firstIndex(of: "{") {
-                var braceCount = 0
-                var endIdx: String.Index? = nil
-                for idx in rawOutput[startIdx...].indices {
-                    if rawOutput[idx] == "{" {
-                        braceCount += 1
-                    } else if rawOutput[idx] == "}" {
-                        braceCount -= 1
-                        if braceCount == 0 {
-                            endIdx = idx
-                            break
-                        }
-                    }
-                }
-                if let endIdx = endIdx {
-                    cleanedOutput = String(rawOutput[startIdx...endIdx])
-                }
-            }
+            let cleanedOutput = self.extractValidJSON(from: rawOutput)
             
             print("CLEANED OUTPUT: ")
-            print(cleanedOutput)
+            print(cleanedOutput!)
             DispatchQueue.main.async {
                 completion(cleanedOutput)
             }
         }
     }
+    
+    // --- POST-PROCESSING: extract valid JSON object or array ---
+    func extractValidJSON(from rawOutput: String) -> String? {
+        let trimmed = rawOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Case 1: output starts with '{' -> single JSON object
+        if let startIdx = trimmed.firstIndex(of: "{") {
+            var braceCount = 0
+            var endIdx: String.Index? = nil
+            for idx in trimmed[startIdx...].indices {
+                if trimmed[idx] == "{" { braceCount += 1 }
+                else if trimmed[idx] == "}" { braceCount -= 1 }
+                if braceCount == 0 {
+                    endIdx = idx
+                    break
+                }
+            }
+            if let endIdx = endIdx {
+                return String(trimmed[startIdx...endIdx])
+            }
+        }
+
+        // Case 2: output starts with '[' -> JSON array
+        else if let startIdx = trimmed.firstIndex(of: "[") {
+            var bracketCount = 0
+            var endIdx: String.Index? = nil
+            for idx in trimmed[startIdx...].indices {
+                if trimmed[idx] == "[" { bracketCount += 1 }
+                else if trimmed[idx] == "]" { bracketCount -= 1 }
+                if bracketCount == 0 {
+                    endIdx = idx
+                    break
+                }
+            }
+            if let endIdx = endIdx {
+                return String(trimmed[startIdx...endIdx])
+            }
+        }
+
+        // Fallback: couldn't find valid JSON
+        return nil
+    }
+
 }

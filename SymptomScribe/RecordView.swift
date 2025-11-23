@@ -177,43 +177,29 @@ struct RecordView: View {
     
     
     func submitRecording() {
-        // Prevent multiple submissions by checking if we're already submitting
         guard !isSubmitting else { return }
-        
-        // Mark submission as in progress
         isSubmitting = true
-        
-        // Show a loading indicator if needed
         statusMessage = "Processing your recording..."
-        submissionStatus = nil // Reset submission status
+        submissionStatus = nil
         
-        // Call the local model
         LocalLLMProcessor.shared.analyzeText(transcribedText) { output in
             DispatchQueue.main.async {
                 self.isSubmitting = false
                 
-                guard let output = output else {
-                    self.statusMessage = ""
-                    self.alertTitle = "Error"
-                    self.alertMessage = "Failed to process recording with local model."
-                    self.showingAlert = true
-                    return
-                }
-                
-                guard let jsonString = extractFirstJSONObject(from: output) else {
-                    self.showError("No JSON object found in model output.")
+                guard let jsonString = output else {
+                    self.showError("Failed to process recording with local model.")
                     return
                 }
 
-                // Parse into Swift array
+                // Parse JSON directly
                 guard let data = jsonString.data(using: .utf8),
-                      let exercises = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+                      let symptomsDict = try? JSONSerialization.jsonObject(with: data) as? [String: Bool] else {
                     self.showError("Invalid JSON format:\n\(jsonString)")
                     return
                 }
-                
-                // Save to Core Data
-                let success = self.saveNote(resistanceTrainingData: exercises, transcribedText: self.transcribedText)
+
+                // Save directly to Core Data
+                let success = self.saveSymptoms(symptomsDict, transcribedText: self.transcribedText)
                 self.transcribedText = ""
                 if success {
                     self.submissionStatus = "Recording submitted successfully."
@@ -227,49 +213,32 @@ struct RecordView: View {
             }
         }
     }
+
     
-    private func saveNote(
-        resistanceTrainingData: [[String: Any]],
-        transcribedText: String
-    ) -> Bool {
-        // Create the parent Note
+    private func saveSymptoms(_ symptoms: [String: Bool], transcribedText: String) -> Bool {
         let newNote = Note(context: viewContext)
         newNote.date = Date()
         newNote.transcribedText = transcribedText
-        newNote.summary = ""
+        newNote.summary = "" // optional
 
-        // For each JSON object, create a ResistanceTraining child
-        for rt in resistanceTrainingData {
+        for (symptom, present) in symptoms {
             let entry = ResistanceTraining(context: viewContext)
-
-            // Required fields:
-            entry.date = newNote.date
-            entry.resistanceType = rt["resistance_type"] as? String
-                ?? "Unspecified"
-            
-            // Map JSON fields
-            entry.exerciseName = rt["exercise"] as? String    ?? "Unspecified"
-            entry.muscleGroup = rt["muscle_group"] as? String ?? "Unspecified"
-            entry.setNumberInSequence = Int64(rt["sets"] as? Int ?? 0)
-            entry.numberOfRepsInSet = Int64(rt["reps"] as? Int ?? 0)
-            entry.untilFailureYN = rt["until_failure"] as? Bool ?? false
-
-            // painOrDiscomfortYN is non-optional Bool
-            entry.painOrDiscomfortYN   = (rt["pain_felt"] as? String) != nil
-
-            // Optional numeric fields—use defaults if missing
-            entry.totalWeightLifted = rt["weight"] as? Double ?? 0.0
-            entry.restTimeInSecondsBeforeCurrentSetOptional =
-                rt["rest_time_before_set"] as? Double as NSNumber?
-
-            // Link back to the note
             entry.note = newNote
+            entry.date = newNote.date // ✅ THIS FIXES THE SAVE ERROR
+            entry.exerciseName = symptom
+            entry.painOrDiscomfortYN = present
+            entry.setNumberInSequence = 0
+            entry.numberOfRepsInSet = 0
+            entry.totalWeightLifted = 0
+            entry.untilFailureYN = false
+            entry.resistanceType = "Symptom"
+            entry.muscleGroup = ""
+            entry.restTimeInSecondsBeforeCurrentSetOptional = 0
         }
 
-        // Save context
         do {
             try viewContext.save()
-            print("Note and associated data saved successfully.")
+            print("Note and symptoms saved successfully.")
             return true
         } catch {
             print("Save error:", error)
@@ -278,39 +247,10 @@ struct RecordView: View {
     }
     
     private func showError(_ message: String) {
-        statusMessage = ""
-        alertTitle = "Error"
-        alertMessage = message
-        showingAlert = true
-    }
-    
-    // helper func for extracting JSON
-    private func extractFirstJSONObject(from text: String) -> String? {
-        guard let startIdx = text.firstIndex(of: "{") else { return nil }
-
-        var braceCount = 0
-        var endIdx: String.Index? = nil
-
-        for idx in text[startIdx...].indices {
-            if text[idx] == "{" {
-                braceCount += 1
-            } else if text[idx] == "}" {
-                braceCount -= 1
-                if braceCount == 0 {
-                    endIdx = idx
-                    break
-                }
-            }
-        }
-
-        if let endIdx = endIdx {
-            let jsonObjectString = String(text[startIdx...endIdx])
-            // Wrap the single JSON object in [ ] to form an array string
-            return "[\(jsonObjectString)]"
-        }
-        return nil
-    }
-
-
+          statusMessage = ""
+          alertTitle = "Error"
+          alertMessage = message
+          showingAlert = true
+      }
 
 }
