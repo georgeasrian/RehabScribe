@@ -1,16 +1,9 @@
-//
-//  MainTabView.swift
-//  SymptomScribe
-//
-//  Created by Aashni Shah on 9/29/24.
-//
 import SwiftUI
 
 struct MainTabView: View {
     @Environment(\.managedObjectContext) private var viewContext
 
     var body: some View {
-        // Bottom Tabs
         TabView {
             // 1. Record Tab
             NavigationView {
@@ -30,14 +23,14 @@ struct MainTabView: View {
                 Text("Insights")
             }
             
-            // 3. Workout Notes Tab
+            // 3. Symptom Log Tab
             NavigationView {
                 ContentView()
                     .environment(\.managedObjectContext, viewContext)
             }
             .tabItem {
-                Image(systemName: "table.fill")
-                Text("Workout Notes")
+                Image(systemName: "list.bullet.clipboard")
+                Text("Symptom Log")
             }
         }
     }
@@ -45,6 +38,7 @@ struct MainTabView: View {
 
 struct MainTabView_Previews: PreviewProvider {
     static var previews: some View {
-        MainTabView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        MainTabView()
+            .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
     }
 }

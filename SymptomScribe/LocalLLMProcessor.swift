@@ -1,10 +1,3 @@
-//
-//  LocalLLMProcessor.swift
-//  SymptomScribe
-//
-//  Created by Samay Prabhu on 7/13/25
-//
-
 import Foundation
 import LLM  // The eastriverlee/LLM.swift package
 
@@ -12,10 +5,37 @@ class LocalLLMProcessor {
     static let shared = LocalLLMProcessor()
     private var llm: LLM?
     
-    // Clear, focused system-level instructions
+    // All 25 cardiac symptoms
+    static let allSymptoms = [
+        "Chest pain at rest",
+        "Chest pain on exertion",
+        "Chest discomfort",
+        "Palpitations",
+        "Fatigue at rest",
+        "Exertional fatigue",
+        "Dyspnea",
+        "Orthopnea",
+        "Paroxysmal nocturnal dyspnea",
+        "Syncope",
+        "Lightheadedness",
+        "Peripheral edema",
+        "Cough / wheezing",
+        "Abdominal pain",
+        "Early satiety",
+        "Diaphoresis",
+        "Nausea / vomiting",
+        "Anxiety / restlessness",
+        "Feeling irregularity of HR",
+        "Pulse deficit",
+        "Tachycardia",
+        "Bradycardia",
+        "Dizziness at rest",
+        "Dizziness upon standing",
+        "Nocturia"
+    ]
+    
     private let systemPrompt = """
-    You are an assistant that extracts symptoms from UserMessage.
-    Respond only with ONE valid JSON OBJECT, nothing more. IMPORTANT: return ONLY ONE JSON
+    You extract symptoms from medical notes and output only JSON.
     """
     
     private init() {
@@ -31,19 +51,17 @@ class LocalLLMProcessor {
             return
         }
         
-        // Initialize LLM with system prompt
         llm = LLM(
             from: url,
             template: .chatML(systemPrompt),
-            maxTokenCount: 1024
+            maxTokenCount: 2048
         )
         print("Phi-2 model loaded successfully")
     }
     
-    /// Sends `transcript` through the model and returns the JSON list string via the completion handler.
+    /// Analyzes transcript and returns JSON with detected symptoms
     func analyzeText(_ transcript: String, completion: @escaping (String?) -> Void) {
-        
-        // future edit: reloading everytime is inefficient, so need to find another way to reset
+        // Reload model to reset state
         loadModel()
         
         guard let llm = llm else {
@@ -52,94 +70,68 @@ class LocalLLMProcessor {
             return
         }
         
-        // User-specific instructions and task
-        let userMessage = """
-        Extract ONLY symptoms that are verbatim in UserMessage below.
-        
-        Each array element must be a JSON object with the following keys and types:
-          -Chest pain at rest: boolean (true ONLY if mentioned in UserMessage)
-          -Chest pain on exertion: boolean (true ONLY if mentioned in UserMessage)
-          -Chest discomfort: boolean (true ONLY if mentioned in UserMessage)
-          -Palpitations: boolean (true ONLY if mentioned in UserMessage)
-          -Fatigue at rest: boolean (true ONLY if mentioned in UserMessage)
-          -Exertional fatigue: boolean (true ONLY if mentioned in UserMessage)
-          -shortness of breath: boolean (true ONLY if mentioned in UserMessage)
-          -lightheadedness: boolean (true ONLY if mentioned in UserMessage)
-          -Cough / wheezing: boolean (true ONLY if mentioned in UserMessage)
-          -Abdominal pain: boolean (true ONLY if mentioned in UserMessage)
-          -sweating: boolean (true ONLY if mentioned in UserMessage)
-          -Nausea / vomiting: boolean (true ONLY if mentioned in UserMessage)
-          -Anxiety / restlessness: boolean (true ONLY if mentioned in UserMessage)
-          -Feeling irregularity of Heart Rate: boolean (true ONLY if mentioned in UserMessage)
-          -Pulse deficit: boolean (true ONLY if mentioned in UserMessage)
-          -Dizziness at rest: boolean (true ONLY if mentioned in UserMessage)
-          -Dizziness upon standing: boolean (true ONLY if mentioned in UserMessage)
-        
-        UserMessage:
-        \"\"\"
-        Earlier today when I was resting I felt chest pain and discomfort, later I felt dizzy when I stood up.
-        \"\"\"
-        
-        Output:
-        """
-        // UserMessage is currently a manually typed transcript rather than the actual transcript for testing purposes. Eventually to be changed back to \(transcript).
+        let userMessage = buildPrompt(transcript: transcript)
         
         Task.detached {
             let inputSeq = llm.preprocess(userMessage, [])
             let rawOutput = await llm.getCompletion(from: inputSeq)
-            print("THE RAW OUTPUT:")
+            
+            print("=== RAW LLM OUTPUT ===")
             print(rawOutput)
+            print("======================")
             
             let cleanedOutput = self.extractValidJSON(from: rawOutput)
             
-            print("CLEANED OUTPUT: ")
-            print(cleanedOutput!)
+            print("=== CLEANED JSON ===")
+            print(cleanedOutput ?? "nil")
+            print("====================")
+            
             DispatchQueue.main.async {
                 completion(cleanedOutput)
             }
         }
     }
     
-    // --- POST-PROCESSING: extract valid JSON object or array ---
+    private func buildPrompt(transcript: String) -> String {
+        """
+        Task: Read the patient note and mark which symptoms are mentioned.
+        Output ONLY valid JSON. No explanations.
+        
+        Example:
+        Patient note: "I felt chest pain while resting and was dizzy when I stood up"
+        JSON output:
+        {"Chest pain at rest": true, "Chest pain on exertion": false, "Chest discomfort": false, "Palpitations": false, "Fatigue at rest": false, "Exertional fatigue": false, "Dyspnea": false, "Orthopnea": false, "Paroxysmal nocturnal dyspnea": false, "Syncope": false, "Lightheadedness": false, "Peripheral edema": false, "Cough / wheezing": false, "Abdominal pain": false, "Early satiety": false, "Diaphoresis": false, "Nausea / vomiting": false, "Anxiety / restlessness": false, "Feeling irregularity of HR": false, "Pulse deficit": false, "Tachycardia": false, "Bradycardia": false, "Dizziness at rest": false, "Dizziness upon standing": true, "Nocturia": false}
+        
+        Now do this task:
+        Patient note: "\(transcript)"
+        JSON output:
+        """
+    }
+    
+    // Extract valid JSON object from LLM output
     func extractValidJSON(from rawOutput: String) -> String? {
         let trimmed = rawOutput.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        // Case 1: output starts with '{' -> single JSON object
+        
+        // Look for JSON object starting with '{'
         if let startIdx = trimmed.firstIndex(of: "{") {
             var braceCount = 0
             var endIdx: String.Index? = nil
+            
             for idx in trimmed[startIdx...].indices {
                 if trimmed[idx] == "{" { braceCount += 1 }
                 else if trimmed[idx] == "}" { braceCount -= 1 }
+                
                 if braceCount == 0 {
                     endIdx = idx
                     break
                 }
             }
+            
             if let endIdx = endIdx {
                 return String(trimmed[startIdx...endIdx])
             }
         }
-
-        // Case 2: output starts with '[' -> JSON array
-        else if let startIdx = trimmed.firstIndex(of: "[") {
-            var bracketCount = 0
-            var endIdx: String.Index? = nil
-            for idx in trimmed[startIdx...].indices {
-                if trimmed[idx] == "[" { bracketCount += 1 }
-                else if trimmed[idx] == "]" { bracketCount -= 1 }
-                if bracketCount == 0 {
-                    endIdx = idx
-                    break
-                }
-            }
-            if let endIdx = endIdx {
-                return String(trimmed[startIdx...endIdx])
-            }
-        }
-
-        // Fallback: couldn't find valid JSON
+        
         return nil
     }
-
 }

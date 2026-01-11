@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  SymptomScribe
-//
-//  Updated for proper grouping and friendly names
-//
-
 import SwiftUI
 import CoreData
 import UIKit
@@ -13,22 +6,27 @@ struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     
     @FetchRequest(
-        entity: ResistanceTraining.entity(),
-        sortDescriptors: [
-            NSSortDescriptor(keyPath: \ResistanceTraining.resistanceType, ascending: false), // Symptoms first
-            NSSortDescriptor(keyPath: \ResistanceTraining.setNumberInSequence, ascending: true)
-        ],
+        sortDescriptors: [NSSortDescriptor(keyPath: \Symptom.date, ascending: false)],
         animation: .default)
-    private var resistanceTrainings: FetchedResults<ResistanceTraining>
+    private var symptoms: FetchedResults<Symptom>
     
     @State private var isGeneratingCSV = false
+    @State private var filterPresent: Bool? = nil // nil = all, true = present only, false = absent only
+    
+    var filteredSymptoms: [Symptom] {
+        if let filterPresent = filterPresent {
+            return symptoms.filter { $0.isPresent == filterPresent }
+        }
+        return Array(symptoms)
+    }
     
     var body: some View {
         NavigationView {
             VStack(alignment: .leading, spacing: 0) {
                 
-                // Share button
-                VStack {
+                // Export and Filter Controls
+                VStack(spacing: 12) {
+                    // Export Button
                     Button(action: shareCSV) {
                         HStack {
                             Image(systemName: "square.and.arrow.up")
@@ -41,6 +39,40 @@ struct ContentView: View {
                         .cornerRadius(8)
                     }
                     .disabled(isGeneratingCSV)
+                    
+                    // Filter Controls
+                    HStack(spacing: 8) {
+                        Text("Filter:")
+                            .font(.subheadline)
+                        
+                        Button(action: { filterPresent = nil }) {
+                            Text("All")
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(filterPresent == nil ? Color.blue : Color.gray.opacity(0.3))
+                                .foregroundColor(filterPresent == nil ? .white : .primary)
+                                .cornerRadius(6)
+                        }
+                        
+                        Button(action: { filterPresent = true }) {
+                            Text("Present")
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(filterPresent == true ? Color.green : Color.gray.opacity(0.3))
+                                .foregroundColor(filterPresent == true ? .white : .primary)
+                                .cornerRadius(6)
+                        }
+                        
+                        Button(action: { filterPresent = false }) {
+                            Text("Absent")
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(filterPresent == false ? Color.red : Color.gray.opacity(0.3))
+                                .foregroundColor(filterPresent == false ? .white : .primary)
+                                .cornerRadius(6)
+                        }
+                    }
+                    .font(.caption)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal)
@@ -48,61 +80,68 @@ struct ContentView: View {
                 .padding(.bottom, 16)
                 
                 if isGeneratingCSV {
-                    Text("Just a moment, we are generating your file.")
+                    Text("Generating your export file...")
                         .foregroundColor(.gray)
                         .padding(.bottom, 16)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 }
                 
-                // Group ResistanceTrainings by resistanceType
-                let groupedTrainings = Dictionary(grouping: resistanceTrainings, by: { $0.resistanceType ?? "Unknown" })
+                // Symptom Table
                 ScrollView(.horizontal) {
                     VStack(alignment: .leading, spacing: 0) {
-                        // Header row
-                        HStack {
-                            Text("Date").bold().frame(width: 150)
-                            Text("Exercise Name").bold().frame(width: 140)
-                            Text("Muscle Group").bold().frame(width: 120)
-                            Text("Total Weight Lifted").bold().frame(width: 140)
-                            Text("Number of Reps").bold().frame(width: 120)
-                            Text("Set Number").bold().frame(width: 120)
-                            Text("Rest Time").bold().frame(width: 120)
-                            Text("Resistance Type").bold().frame(width: 140)
-                            Text("Pain/Discomfort").bold().frame(width: 140)
-                            Text("Until Failure").bold().frame(width: 120)
+                        // Header Row
+                        HStack(spacing: 0) {
+                            Text("Date & Time")
+                                .bold()
+                                .frame(width: 180, alignment: .leading)
+                                .padding(.horizontal, 8)
+                            
+                            Text("Symptom Name")
+                                .bold()
+                                .frame(width: 220, alignment: .leading)
+                                .padding(.horizontal, 8)
+                            
+                            Text("Status")
+                                .bold()
+                                .frame(width: 100, alignment: .center)
+                                .padding(.horizontal, 8)
                         }
-                        .padding(.horizontal)
-                        .padding(.top, 0)
+                        .padding(.vertical, 12)
                         .background(Color(.systemGray6))
                         .border(Color.black, width: 1)
                         
+                        // Data Rows
                         ScrollView(.vertical) {
                             VStack(spacing: 0) {
-                                // Loop over grouped sections
-                                ForEach(groupedTrainings.keys.sorted(), id: \.self) { type in
-                                    Text(type)
-                                        .font(.headline)
-                                        .padding(.vertical, 4)
-                                        .padding(.horizontal)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .background(Color(.systemGray5))
-                                    
-                                    ForEach(groupedTrainings[type]!, id: \.objectID) { training in
-                                        HStack {
-                                            Text(training.date ?? Date(), formatter: itemFormatter).frame(width: 150)
-                                            Text(training.exerciseName ?? "N/A").frame(width: 140)
-                                            Text(training.muscleGroup ?? "N/A").frame(width: 120)
-                                            Text(String(format: "%.2f lbs", training.totalWeightLifted)).frame(width: 140)
-                                            Text("\(training.numberOfRepsInSet)").frame(width: 120)
-                                            Text("\(training.setNumberInSequence)").frame(width: 120)
-                                            Text(String(format: "%.0f sec", training.restTimeInSecondsBeforeCurrentSetOptional?.doubleValue ?? 0.0)).frame(width: 120)
-                                            Text(training.resistanceType ?? "N/A").frame(width: 140)
-                                            Text(training.painOrDiscomfortYN ? "Yes" : "No").frame(width: 140)
-                                            Text(training.untilFailureYN ? "Yes" : "No").frame(width: 120)
+                                if filteredSymptoms.isEmpty {
+                                    Text("No symptoms recorded yet")
+                                        .foregroundColor(.gray)
+                                        .padding()
+                                        .frame(maxWidth: .infinity)
+                                } else {
+                                    ForEach(filteredSymptoms, id: \.objectID) { symptom in
+                                        HStack(spacing: 0) {
+                                            Text(symptom.date ?? Date(), formatter: itemFormatter)
+                                                .frame(width: 180, alignment: .leading)
+                                                .padding(.horizontal, 8)
+                                            
+                                            Text(symptom.symptomName ?? "Unknown")
+                                                .frame(width: 220, alignment: .leading)
+                                                .padding(.horizontal, 8)
+                                            
+                                            HStack {
+                                                Image(systemName: symptom.isPresent ? "checkmark.circle.fill" : "xmark.circle")
+                                                    .foregroundColor(symptom.isPresent ? .green : .red)
+                                                Text(symptom.isPresent ? "Present" : "Absent")
+                                                    .font(.caption)
+                                            }
+                                            .frame(width: 100, alignment: .center)
+                                            .padding(.horizontal, 8)
                                         }
-                                        .padding(.horizontal)
-                                        .background(Color(UIColor.secondarySystemBackground))
+                                        .padding(.vertical, 8)
+                                        .background(symptom.isPresent ? Color.green.opacity(0.1) : Color(UIColor.secondarySystemBackground))
+                                        .border(Color.gray.opacity(0.2), width: 0.5)
                                     }
                                 }
                             }
@@ -110,8 +149,43 @@ struct ContentView: View {
                     }
                     .padding(.horizontal, 16)
                 }
+                
+                // Summary Stats
+                VStack(alignment: .leading, spacing: 8) {
+                    Divider()
+                    HStack {
+                        Text("Total Entries:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("\(symptoms.count)")
+                            .font(.caption)
+                            .bold()
+                        
+                        Spacer()
+                        
+                        Text("Present:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("\(symptoms.filter { $0.isPresent }.count)")
+                            .font(.caption)
+                            .bold()
+                            .foregroundColor(.green)
+                        
+                        Spacer()
+                        
+                        Text("Absent:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("\(symptoms.filter { !$0.isPresent }.count)")
+                            .font(.caption)
+                            .bold()
+                            .foregroundColor(.red)
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                }
             }
-            .navigationTitle("Workout Notes Table")
+            .navigationTitle("Symptom Log")
             .navigationBarTitleDisplayMode(.inline)
         }
     }
@@ -130,8 +204,9 @@ struct ContentView: View {
         DispatchQueue.global(qos: .userInitiated).async {
             let csvString = generateCSVString()
             let tempDirectory = FileManager.default.temporaryDirectory
-            let fileName = "ResistanceTrainings.csv"
+            let fileName = "SymptomLog_\(Date().timeIntervalSince1970).csv"
             let csvURL = tempDirectory.appendingPathComponent(fileName)
+            
             do {
                 try csvString.write(to: csvURL, atomically: true, encoding: .utf8)
                 DispatchQueue.main.async {
@@ -157,27 +232,25 @@ struct ContentView: View {
     }
     
     func generateCSVString() -> String {
-        var csvText = "Date,Exercise Name,Muscle Group,Total Weight Lifted,Number of Reps,Set Number,Rest Time,Resistance Type,Pain/Discomfort,Until Failure\n"
+        var csvText = "Date,Time,Symptom Name,Status\n"
         
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .short
         
-        for training in resistanceTrainings {
-            let dateString = formatter.string(from: training.date ?? Date())
-            let exerciseName = training.exerciseName?.replacingOccurrences(of: "\"", with: "\"\"") ?? ""
-            let muscleGroup = training.muscleGroup?.replacingOccurrences(of: "\"", with: "\"\"") ?? ""
-            let totalWeightLifted = String(format: "%.2f", training.totalWeightLifted)
-            let numberOfReps = "\(training.numberOfRepsInSet)"
-            let setNumber = "\(training.setNumberInSequence)"
-            let restTime = String(format: "%.0f", training.restTimeInSecondsBeforeCurrentSetOptional?.doubleValue ?? 0.0)
-            let resistanceType = training.resistanceType?.replacingOccurrences(of: "\"", with: "\"\"") ?? ""
-            let painOrDiscomfort = training.painOrDiscomfortYN ? "Yes" : "No"
-            let untilFailure = training.untilFailureYN ? "Yes" : "No"
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = .short
+        
+        for symptom in symptoms {
+            let date = symptom.date ?? Date()
+            let dateString = dateFormatter.string(from: date)
+            let timeString = timeFormatter.string(from: date)
+            let symptomName = (symptom.symptomName ?? "Unknown").replacingOccurrences(of: "\"", with: "\"\"")
+            let status = symptom.isPresent ? "Present" : "Absent"
             
-            let line = "\"\(dateString)\",\"\(exerciseName)\",\"\(muscleGroup)\",\"\(totalWeightLifted)\",\"\(numberOfReps)\",\"\(setNumber)\",\"\(restTime)\",\"\(resistanceType)\",\"\(painOrDiscomfort)\",\"\(untilFailure)\"\n"
+            let line = "\"\(dateString)\",\"\(timeString)\",\"\(symptomName)\",\"\(status)\"\n"
             csvText += line
         }
+        
         return csvText
     }
 }

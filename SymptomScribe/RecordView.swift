@@ -1,11 +1,3 @@
-//
-//  RecordView.swift
-//  SymptomScribe
-//
-//  Created by Aashni Shah on 9/29/24.
-//  Modified by Samay Prabhu on 11/22/25
-//
-
 import SwiftUI
 import Speech
 import CoreData
@@ -37,7 +29,7 @@ struct RecordView: View {
                     .foregroundColor(.blue)
             }
             
-            // Submission Status Message After Submission
+            // Submission Status Message
             if let submissionStatus = submissionStatus {
                 Text(submissionStatus)
                     .padding()
@@ -47,7 +39,7 @@ struct RecordView: View {
                     .multilineTextAlignment(.center)
             }
             
-            // Recording Buttons: Record and Stop
+            // Recording Buttons
             HStack {
                 Button(action: {
                     if !isRecording {
@@ -61,7 +53,6 @@ struct RecordView: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
-                .accessibilityLabel("Record Button")
                 .disabled(isRecording)
                 
                 Button(action: {
@@ -76,7 +67,6 @@ struct RecordView: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
-                .accessibilityLabel("Stop Button")
                 .disabled(!isRecording)
             }
             .padding(.horizontal)
@@ -90,35 +80,37 @@ struct RecordView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
-            .accessibilityLabel("Submit Button")
             .disabled(transcribedText.isEmpty || isRecording || isSubmitting)
             .padding(.horizontal)
             
-            // Text to Prompt the User for Cardiology Recording
+            // Instructions
             Text("Cardiology Symptom Recorder")
                 .font(.headline)
                 .padding(.top, 20)
             
             Text("""
-                Please describe any cardiac symptoms experienced, including:
+                Please describe any cardiac symptoms you're experiencing:
 
-                - Chest pain (at rest or on exertion)  
-                - Palpitations or irregular heartbeats  
-                - Shortness of breath  
-                - Fatigue or lightheadedness  
-                - Sweating, nausea, or anxiety  
-                - Any dizziness or fainting episodes  
+                • Chest pain or discomfort (at rest or during activity)
+                • Palpitations or irregular heartbeats
+                • Shortness of breath or difficulty breathing
+                • Fatigue, weakness, or lightheadedness
+                • Swelling in legs, ankles, or feet
+                • Dizziness, fainting, or near-fainting episodes
+                • Sweating, nausea, or anxiety
+                • Cough, wheezing, or abdominal discomfort
 
-                Try to provide context: when the symptom occurred, what triggered it, and how long it lasted.
-
-                Multiple episodes can be recorded in separate entries.
+                Include when it occurred, what you were doing, and how long it lasted.
                 """)
+                .font(.subheadline)
                 .multilineTextAlignment(.leading)
                 .padding()
+                .background(Color(UIColor.secondarySystemBackground))
+                .cornerRadius(8)
             
             Spacer()
             
-            // Navigation Button to View Recordings
+            // Navigation to Recordings
             NavigationLink(destination: NotesListView()) {
                 Text("View Recordings")
                     .font(.headline)
@@ -127,11 +119,10 @@ struct RecordView: View {
                     .padding()
                     .background(Color.blue)
                     .cornerRadius(10)
-                    .padding(.horizontal)
             }
         }
         .padding()
-        .navigationTitle("Cardiology Recorder")
+        .navigationTitle("Record Symptoms")
         .alert(isPresented: $showingAlert) {
             Alert(
                 title: Text(alertTitle),
@@ -144,6 +135,7 @@ struct RecordView: View {
     }
     
     // MARK: - Recording Functions
+    
     func startRecording() {
         if speechRecognizer == nil {
             speechRecognizer = SpeechRecognizer()
@@ -156,7 +148,7 @@ struct RecordView: View {
                     self.submissionStatus = nil
                 } else {
                     self.alertTitle = "Permission Denied"
-                    self.alertMessage = "Please enable speech recognition and microphone permissions in settings."
+                    self.alertMessage = "Please enable speech recognition and microphone permissions in Settings."
                     self.showingAlert = true
                     self.speechRecognizer = nil
                 }
@@ -167,8 +159,10 @@ struct RecordView: View {
     func stopRecording() {
         speechRecognizer?.stopTranscribing()
         transcribedText = speechRecognizer?.transcript.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        print("Transcribed Text: \(transcribedText)")
-        statusMessage = "Recording stopped. Review your transcription and press Submit."
+        print("=== TRANSCRIBED TEXT ===")
+        print(transcribedText)
+        print("========================")
+        statusMessage = "Recording stopped. Review and press Submit."
         isRecording = false
         speechRecognizer = nil
     }
@@ -176,7 +170,7 @@ struct RecordView: View {
     func submitRecording() {
         guard !isSubmitting else { return }
         isSubmitting = true
-        statusMessage = "Processing your recording..."
+        statusMessage = "Processing your recording with AI..."
         submissionStatus = nil
         
         LocalLLMProcessor.shared.analyzeText(transcribedText) { output in
@@ -184,59 +178,72 @@ struct RecordView: View {
                 self.isSubmitting = false
                 
                 guard let jsonString = output else {
-                    self.showError("Failed to process recording with local model.")
+                    self.showError("Failed to process recording. Please try again.")
                     return
                 }
-
+                
+                print("=== JSON STRING ===")
+                print(jsonString)
+                print("===================")
+                
                 guard let data = jsonString.data(using: .utf8),
                       let symptomsDict = try? JSONSerialization.jsonObject(with: data) as? [String: Bool] else {
-                    self.showError("Invalid JSON format:\n\(jsonString)")
+                    self.showError("Invalid response from AI model:\n\(jsonString)")
                     return
                 }
-
+                
                 let success = self.saveSymptoms(symptomsDict, transcribedText: self.transcribedText)
-                self.transcribedText = ""
+                
                 if success {
-                    self.submissionStatus = "Recording submitted successfully."
+                    self.transcribedText = ""
+                    self.submissionStatus = "Symptoms recorded successfully!"
                     self.alertTitle = "Success"
+                    self.alertMessage = "Your symptoms have been saved."
                 } else {
-                    self.submissionStatus = "Failed to save recording."
+                    self.submissionStatus = "Failed to save symptoms."
                     self.alertTitle = "Error"
+                    self.alertMessage = "There was a problem saving your recording."
                 }
-                self.alertMessage = self.submissionStatus ?? ""
+                
                 self.showingAlert = true
             }
         }
     }
     
     // MARK: - Core Data Saving
+    
     private func saveSymptoms(_ symptoms: [String: Bool], transcribedText: String) -> Bool {
+        // Create new Note
         let newNote = Note(context: viewContext)
         newNote.date = Date()
         newNote.transcribedText = transcribedText
-        newNote.summary = ""
         
-        for (symptom, present) in symptoms {
-            let entry = ResistanceTraining(context: viewContext)
-            entry.note = newNote
-            entry.date = newNote.date
-            entry.exerciseName = symptom
-            entry.painOrDiscomfortYN = present
-            entry.setNumberInSequence = 0
-            entry.numberOfRepsInSet = 0
-            entry.totalWeightLifted = 0
-            entry.untilFailureYN = false
-            entry.resistanceType = "Symptom"
-            entry.muscleGroup = ""
-            entry.restTimeInSecondsBeforeCurrentSetOptional = 0
+        // Create summary from detected symptoms
+        let detectedSymptoms = symptoms.filter { $0.value }.map { $0.key }
+        if detectedSymptoms.isEmpty {
+            newNote.summary = "No symptoms detected"
+        } else {
+            newNote.summary = detectedSymptoms.prefix(3).joined(separator: ", ")
+            if detectedSymptoms.count > 3 {
+                newNote.summary! += ", ..."
+            }
+        }
+        
+        // Create Symptom entries for ALL symptoms (present and absent)
+        for (symptomName, isPresent) in symptoms {
+            let symptomEntry = Symptom(context: viewContext)
+            symptomEntry.note = newNote
+            symptomEntry.date = newNote.date
+            symptomEntry.symptomName = symptomName
+            symptomEntry.isPresent = isPresent
         }
         
         do {
             try viewContext.save()
-            print("Note and symptoms saved successfully.")
+            print("✅ Note and \(symptoms.count) symptoms saved successfully")
             return true
         } catch {
-            print("Save error:", error)
+            print("❌ Save error: \(error)")
             return false
         }
     }

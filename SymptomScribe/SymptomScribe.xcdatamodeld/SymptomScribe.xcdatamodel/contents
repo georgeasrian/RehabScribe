@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22758" systemVersion="23D60" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24411" systemVersion="24G84" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="Context" representedClassName="Context" syncable="YES" codeGenerationType="class">
         <attribute name="contextCategory" optional="YES" attributeType="String"/>
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="specificContextDetail" optional="YES" attributeType="String"/>
         <relationship name="note" maxCount="1" deletionRule="Nullify" destinationEntity="Note" inverseName="context" inverseEntity="Note"/>
     </entity>
+    <entity name="Entity" representedClassName="Entity" syncable="YES" codeGenerationType="class"/>
     <entity name="Medication" representedClassName="Medication" syncable="YES" codeGenerationType="class">
         <attribute name="brandNameOrGeneric" optional="YES" attributeType="String"/>
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -14,37 +15,19 @@
         <attribute name="medicationName" optional="YES" attributeType="String"/>
         <attribute name="positiveOrNegativeImpact" optional="YES" attributeType="String"/>
         <attribute name="sideEffects" optional="YES" attributeType="String"/>
-        <relationship name="note" maxCount="1" deletionRule="Nullify" destinationEntity="Note" inverseName="medication" inverseEntity="Note"/>
+        <relationship name="note" maxCount="1" deletionRule="Nullify" destinationEntity="Note"/>
     </entity>
-    <entity name="Note" representedClassName="Note" syncable="YES" codeGenerationType="class">
+    <entity name="Note" representedClassName="Note" syncable="YES">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="summary" optional="YES" attributeType="String"/>
         <attribute name="transcribedText" optional="YES" attributeType="String"/>
         <relationship name="context" toMany="YES" deletionRule="Nullify" destinationEntity="Context" inverseName="note" inverseEntity="Context"/>
-        <relationship name="medication" toMany="YES" deletionRule="Nullify" destinationEntity="Medication" inverseName="note" inverseEntity="Medication"/>
-        <relationship name="resistanceTraining" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ResistanceTraining" inverseName="note" inverseEntity="ResistanceTraining"/>
-        <relationship name="symptom" toMany="YES" deletionRule="Nullify" destinationEntity="Symptom" inverseName="note" inverseEntity="Symptom"/>
+        <relationship name="symptoms" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Symptom" inverseName="note" inverseEntity="Symptom"/>
     </entity>
-    <entity name="ResistanceTraining" representedClassName="ResistanceTraining" syncable="YES" codeGenerationType="class">
-        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="exerciseName" attributeType="String"/>
-        <attribute name="muscleGroup" attributeType="String"/>
-        <attribute name="numberOfRepsInSet" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="painOrDiscomfortYN" attributeType="Boolean" usesScalarValueType="YES"/>
-        <attribute name="resistanceType" attributeType="String"/>
-        <attribute name="restTimeInSecondsBeforeCurrentSetOptional" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="NO"/>
-        <attribute name="setNumberInSequence" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="totalWeightLifted" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
-        <attribute name="untilFailureYN" attributeType="Boolean" usesScalarValueType="YES"/>
-        <relationship name="note" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Note" inverseName="resistanceTraining" inverseEntity="Note"/>
-    </entity>
-    <entity name="Symptom" representedClassName="Symptom" syncable="YES" codeGenerationType="class">
-        <attribute name="anatomy" optional="YES" attributeType="String"/>
-        <attribute name="qualitativeMeasure" optional="YES" attributeType="String"/>
-        <attribute name="quantitativeMeasure" optional="YES" attributeType="String"/>
-        <attribute name="symptom" optional="YES" attributeType="String"/>
-        <attribute name="timeExpression" optional="YES" attributeType="String"/>
-        <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
-        <relationship name="note" maxCount="1" deletionRule="Nullify" destinationEntity="Note" inverseName="symptom" inverseEntity="Note"/>
+    <entity name="Symptom" representedClassName="Symptom" syncable="YES">
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="isPresent" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="symptomName" optional="YES" attributeType="String"/>
+        <relationship name="note" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Note" inverseName="symptoms" inverseEntity="Note"/>
     </entity>
 </model>

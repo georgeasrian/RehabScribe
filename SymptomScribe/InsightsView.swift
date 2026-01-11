@@ -2,587 +2,298 @@
 //  InsightsView.swift
 //  SymptomScribe
 //
-//  Created by Aashni Shah on 10/1/24.
+//  Created by Samay coding on 1/11/26.
 //
 
-// InsightsView.swift
+
 import SwiftUI
 import CoreData
-import Charts
 
 struct InsightsView: View {
     @Environment(\.managedObjectContext) private var viewContext
-
-    @State private var selectedTimePeriod: TimePeriod = .week
-    @State private var customDateRange: ClosedRange<Date> = {
-        let now = Date()
-        let start = Calendar.current.date(byAdding: .month, value: -1, to: now)!
-        return start...now
-    }()
-
+    
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Symptom.date, ascending: false)],
+        animation: .default)
+    private var allSymptoms: FetchedResults<Symptom>
+    
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Note.date, ascending: false)],
+        animation: .default)
+    private var allNotes: FetchedResults<Note>
+    
+    var symptomFrequency: [(name: String, count: Int)] {
+        let presentSymptoms = allSymptoms.filter { $0.isPresent }
+        let grouped = Dictionary(grouping: presentSymptoms) { $0.symptomName ?? "Unknown" }
+        return grouped.map { (name: $0.key, count: $0.value.count) }
+            .sorted { $0.count > $1.count }
+    }
+    
+    var totalRecordings: Int {
+        allNotes.count
+    }
+    
+    var totalDetectedSymptoms: Int {
+        allSymptoms.filter { $0.isPresent }.count
+    }
+    
+    var mostCommonSymptom: String {
+        symptomFrequency.first?.name ?? "None"
+    }
+    
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Time Period Picker
-                    TimePeriodPicker(selectedTimePeriod: $selectedTimePeriod, customDateRange: $customDateRange)
-
-                    // Workout Performance Overview
-                    WorkoutPerformanceChart(timePeriod: selectedTimePeriod, customDateRange: customDateRange)
-
-                    // Muscle Group Focus Analysis
-                    MuscleGroupBarChart(timePeriod: selectedTimePeriod, customDateRange: customDateRange)
-
-                    // Pain and Discomfort Tracking
-                    PainDiscomfortChart(timePeriod: selectedTimePeriod, customDateRange: customDateRange)
-
-                    // Resistance Type Utilization
-                    ResistanceTypeBarChart(timePeriod: selectedTimePeriod, customDateRange: customDateRange)
-
-                    // Rest Time Insights
-                    RestTimeChart(timePeriod: selectedTimePeriod, customDateRange: customDateRange)
-
-                    // HealthKit Data Integration (Placeholder)
-                    // Add your HealthKit integration charts here
+        ScrollView {
+            VStack(spacing: 20) {
+                
+                // Summary Cards
+                VStack(spacing: 12) {
+                    Text("Overview")
+                        .font(.title2)
+                        .bold()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    HStack(spacing: 12) {
+                        // Total Recordings
+                        StatCard(
+                            title: "Recordings",
+                            value: "\(totalRecordings)",
+                            icon: "waveform",
+                            color: .blue
+                        )
+                        
+                        // Total Symptoms
+                        StatCard(
+                            title: "Symptoms",
+                            value: "\(totalDetectedSymptoms)",
+                            icon: "heart.text.square",
+                            color: .red
+                        )
+                    }
+                    
+                    // Most Common Symptom
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "chart.bar.fill")
+                                .foregroundColor(.orange)
+                            Text("Most Frequent")
+                                .font(.headline)
+                        }
+                        
+                        Text(mostCommonSymptom)
+                            .font(.title3)
+                            .bold()
+                            .foregroundColor(.orange)
+                        
+                        if let topSymptom = symptomFrequency.first {
+                            Text("Reported \(topSymptom.count) time\(topSymptom.count == 1 ? "" : "s")")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(12)
                 }
-                .padding()
+                .padding(.horizontal)
+                .padding(.top)
+                
+                // Symptom Frequency Chart
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Symptom Frequency")
+                        .font(.title2)
+                        .bold()
+                        .padding(.horizontal)
+                    
+                    if symptomFrequency.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "chart.bar")
+                                .font(.system(size: 50))
+                                .foregroundColor(.gray)
+                            Text("No symptoms recorded yet")
+                                .font(.headline)
+                                .foregroundColor(.gray)
+                            Text("Start recording to see insights")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                    } else {
+                        VStack(spacing: 8) {
+                            ForEach(symptomFrequency.prefix(10), id: \.name) { item in
+                                SymptomBarView(
+                                    symptomName: item.name,
+                                    count: item.count,
+                                    maxCount: symptomFrequency.first?.count ?? 1
+                                )
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+                .padding(.vertical)
+                
+                // Recent Activity
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Recent Activity")
+                        .font(.title2)
+                        .bold()
+                        .padding(.horizontal)
+                    
+                    if allNotes.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 50))
+                                .foregroundColor(.gray)
+                            Text("No recent activity")
+                                .font(.headline)
+                                .foregroundColor(.gray)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                    } else {
+                        VStack(spacing: 12) {
+                            ForEach(allNotes.prefix(5)) { note in
+                                RecentActivityRow(note: note)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+                
+                Spacer(minLength: 40)
             }
-            .navigationTitle("Insights")
         }
+        .navigationTitle("Insights")
     }
 }
 
-// TimePeriod.swift
-import Foundation
+// MARK: - Supporting Views
 
-enum TimePeriod: String, CaseIterable, Identifiable {
-    case day, week, month, threeMonths, year, allTime, custom
-
-    var id: String { self.rawValue }
-
-    var displayName: String {
-        switch self {
-        case .day: return "Day"
-        case .week: return "Week"
-        case .month: return "Month"
-        case .threeMonths: return "3 Months"
-        case .year: return "Year"
-        case .allTime: return "All Time"
-        case .custom: return "Custom Range"
+struct StatCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                Spacer()
+            }
+            
+            Text(value)
+                .font(.title)
+                .bold()
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
-    }
-
-    func dateRange() -> ClosedRange<Date> {
-        let calendar = Calendar.current
-        let now = Date()
-
-        switch self {
-        case .day:
-            let start = calendar.startOfDay(for: now)
-            return start...now
-        case .week:
-            let start = calendar.date(byAdding: .day, value: -7, to: now)!
-            return start...now
-        case .month:
-            let start = calendar.date(byAdding: .month, value: -1, to: now)!
-            return start...now
-        case .threeMonths:
-            let start = calendar.date(byAdding: .month, value: -3, to: now)!
-            return start...now
-        case .year:
-            let start = calendar.date(byAdding: .year, value: -1, to: now)!
-            return start...now
-        case .allTime:
-            let start = Date.distantPast
-            return start...now
-        case .custom:
-            return now...now // Placeholder, actual range will be set externally
-        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(color.opacity(0.1))
+        .cornerRadius(12)
     }
 }
 
-// TimePeriodPicker.swift
-import SwiftUI
+struct SymptomBarView: View {
+    let symptomName: String
+    let count: Int
+    let maxCount: Int
+    
+    var percentage: CGFloat {
+        guard maxCount > 0 else { return 0 }
+        return CGFloat(count) / CGFloat(maxCount)
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(symptomName)
+                    .font(.subheadline)
+                    .lineLimit(1)
+                Spacer()
+                Text("\(count)")
+                    .font(.caption)
+                    .bold()
+                    .foregroundColor(.secondary)
+            }
+            
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    // Background
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 8)
+                        .cornerRadius(4)
+                    
+                    // Filled portion
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [.blue, .purple]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: geometry.size.width * percentage, height: 8)
+                        .cornerRadius(4)
+                }
+            }
+            .frame(height: 8)
+        }
+        .padding(.vertical, 4)
+    }
+}
 
-struct TimePeriodPicker: View {
-    @Binding var selectedTimePeriod: TimePeriod
-    @Binding var customDateRange: ClosedRange<Date>
-
-    @State private var showingDatePicker = false
-
+struct RecentActivityRow: View {
+    let note: Note
+    
+    var symptomCount: Int {
+        guard let symptoms = note.symptoms as? Set<Symptom> else { return 0 }
+        return symptoms.filter { $0.isPresent }.count
+    }
+    
     var body: some View {
         HStack {
-            Picker("Time Period", selection: $selectedTimePeriod) {
-                ForEach(TimePeriod.allCases) { period in
-                    Text(period.displayName).tag(period)
-                }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(note.date ?? Date(), style: .date)
+                    .font(.subheadline)
+                    .bold()
+                Text(note.date ?? Date(), style: .time)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
-            .pickerStyle(MenuPickerStyle())
-
-            if selectedTimePeriod == .custom {
-                Button(action: {
-                    showingDatePicker.toggle()
-                }) {
-                    Image(systemName: "calendar")
+            
+            Spacer()
+            
+            VStack(alignment: .trailing, spacing: 4) {
+                HStack {
+                    Image(systemName: "heart.text.square.fill")
+                        .foregroundColor(symptomCount > 0 ? .red : .gray)
+                    Text("\(symptomCount)")
+                        .font(.headline)
                 }
-                .sheet(isPresented: $showingDatePicker) {
-                    DateRangePicker(customDateRange: $customDateRange)
-                }
+                Text(symptomCount == 1 ? "symptom" : "symptoms")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
         .padding()
+        .background(Color(UIColor.secondarySystemBackground))
+        .cornerRadius(8)
     }
 }
 
-// DateRangePicker.swift
-import SwiftUI
-
-struct DateRangePicker: View {
-    @Binding var customDateRange: ClosedRange<Date>
-
-    @Environment(\.presentationMode) var presentationMode
-
-    @State private var startDate: Date
-    @State private var endDate: Date
-
-    init(customDateRange: Binding<ClosedRange<Date>>) {
-        _customDateRange = customDateRange
-        _startDate = State(initialValue: customDateRange.wrappedValue.lowerBound)
-        _endDate = State(initialValue: customDateRange.wrappedValue.upperBound)
-    }
-
-    var body: some View {
+struct InsightsView_Previews: PreviewProvider {
+    static var previews: some View {
         NavigationView {
-            Form {
-                DatePicker("Start Date", selection: $startDate, displayedComponents: .date)
-                DatePicker("End Date", selection: $endDate, displayedComponents: .date)
-            }
-            .navigationTitle("Select Date Range")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        customDateRange = startDate...endDate
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
+            InsightsView()
+                .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
         }
     }
 }
-
-// WorkoutPerformanceChart.swift
-import SwiftUI
-import CoreData
-import Charts
-
-struct WorkoutPerformanceChart: View {
-    @Environment(\.managedObjectContext) private var viewContext
-
-    var timePeriod: TimePeriod
-    var customDateRange: ClosedRange<Date>
-
-    @State private var data: [WorkoutData] = []
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text("Workout Performance Overview")
-                .font(.headline)
-
-            Chart {
-                ForEach(data) { dataPoint in
-                    LineMark(
-                        x: .value("Date", dataPoint.date),
-                        y: .value("Total Weight", dataPoint.totalWeight)
-                    )
-                    .interpolationMethod(.catmullRom)
-                    .foregroundStyle(Color.blue)
-                    .symbol(Circle())
-                    .symbolSize(50)
-                }
-            }
-            .chartXAxis {
-                AxisMarks(values: .stride(by: .day)) { value in
-                    AxisGridLine()
-                    AxisValueLabel(format: .dateTime.day().month())
-                }
-            }
-            .chartYAxis {
-                AxisMarks(position: .leading)
-            }
-            .frame(height: 200)
-            .chartOverlay { proxy in
-                GeometryReader { geometry in
-                    Rectangle()
-                        .fill(Color.clear)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture()
-                                .onChanged { value in
-                                    let location = value.location
-                                    if let date: Date = proxy.value(atX: location.x),
-                                       let totalWeight: Double = proxy.value(atY: location.y) {
-                                        // Display tooltip with date and totalWeight
-                                    }
-                                }
-                                .onEnded { _ in
-                                    // Hide tooltip
-                                }
-                        )
-                }
-            }
-            .onAppear(perform: fetchData)
-            .onChange(of: timePeriod) { _ in fetchData() }
-            .onChange(of: customDateRange) { _ in fetchData() }
-        }
-    }
-
-    private func fetchData() {
-        let fetchRequest: NSFetchRequest<ResistanceTraining> = ResistanceTraining.fetchRequest()
-        let dateRange = timePeriod == .custom ? customDateRange : timePeriod.dateRange()
-        fetchRequest.predicate = NSPredicate(format: "note.date >= %@ AND note.date <= %@", dateRange.lowerBound as NSDate, dateRange.upperBound as NSDate)
-
-        do {
-            let results = try viewContext.fetch(fetchRequest)
-            let groupedData = Dictionary(grouping: results, by: { Calendar.current.startOfDay(for: $0.note?.date ?? Date()) })
-
-            data = groupedData.map { (date, trainings) in
-                let totalWeight = trainings.reduce(0) { $0 + $1.totalWeightLifted }
-                return WorkoutData(date: date, totalWeight: totalWeight)
-            }
-            .sorted { $0.date < $1.date }
-        } catch {
-            print("Error fetching data: \(error)")
-        }
-    }
-}
-
-struct WorkoutData: Identifiable {
-    var id = UUID()
-    var date: Date
-    var totalWeight: Double
-}
-
-// MuscleGroupBarChart.swift
-import SwiftUI
-import CoreData
-import Charts
-
-struct MuscleGroupBarChart: View {
-    @Environment(\.managedObjectContext) private var viewContext
-
-    var timePeriod: TimePeriod
-    var customDateRange: ClosedRange<Date>
-
-    @State private var data: [MuscleGroupData] = []
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text("Muscle Group Focus Analysis")
-                .font(.headline)
-
-            Chart {
-                ForEach(data) { item in
-                    BarMark(
-                        x: .value("Muscle Group", item.muscleGroup),
-                        y: .value("Total Weight", item.totalWeight)
-                    )
-                    .foregroundStyle(by: .value("Muscle Group", item.muscleGroup))
-                }
-            }
-            .chartXAxis {
-                AxisMarks(values: .automatic) { value in
-                    AxisGridLine()
-                    AxisValueLabel()
-                }
-            }
-            .chartYAxis {
-                AxisMarks(position: .leading)
-            }
-            .frame(height: 200)
-            .chartOverlay { proxy in
-                GeometryReader { geometry in
-                    Rectangle()
-                        .fill(Color.clear)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            TapGesture()
-                                .onEnded { value in
-                                    // Handle tap gesture if needed
-                                }
-                        )
-                }
-            }
-            .onAppear(perform: fetchData)
-            .onChange(of: timePeriod) { _ in fetchData() }
-            .onChange(of: customDateRange) { _ in fetchData() }
-        }
-    }
-
-    private func fetchData() {
-        let fetchRequest: NSFetchRequest<ResistanceTraining> = ResistanceTraining.fetchRequest()
-        let dateRange = timePeriod == .custom ? customDateRange : timePeriod.dateRange()
-        fetchRequest.predicate = NSPredicate(format: "note.date >= %@ AND note.date <= %@", dateRange.lowerBound as NSDate, dateRange.upperBound as NSDate)
-
-        do {
-            let results = try viewContext.fetch(fetchRequest)
-            let groupedData = Dictionary(grouping: results, by: { $0.muscleGroup ?? "Unspecified" })
-
-            data = groupedData.map { (muscleGroup, trainings) in
-                let totalWeight = trainings.reduce(0) { $0 + $1.totalWeightLifted }
-                return MuscleGroupData(muscleGroup: muscleGroup, totalWeight: totalWeight)
-            }
-        } catch {
-            print("Error fetching data: \(error)")
-        }
-    }
-}
-
-struct MuscleGroupData: Identifiable {
-    var id = UUID()
-    var muscleGroup: String
-    var totalWeight: Double
-}
-
-// PainDiscomfortChart.swift
-import SwiftUI
-import CoreData
-import Charts
-
-struct PainDiscomfortChart: View {
-    @Environment(\.managedObjectContext) private var viewContext
-
-    var timePeriod: TimePeriod
-    var customDateRange: ClosedRange<Date>
-
-    @State private var data: [PainData] = []
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text("Pain and Discomfort Tracking")
-                .font(.headline)
-
-            Chart {
-                ForEach(data) { item in
-                    BarMark(
-                        x: .value("Date", item.date),
-                        y: .value("Count", item.count)
-                    )
-                }
-            }
-            .chartXAxis {
-                AxisMarks(values: .stride(by: .day)) { value in
-                    AxisGridLine()
-                    AxisValueLabel(format: .dateTime.day().month())
-                }
-            }
-            .chartYAxis {
-                AxisMarks(position: .leading)
-            }
-            .frame(height: 200)
-            .chartOverlay { proxy in
-                GeometryReader { geometry in
-                    Rectangle()
-                        .fill(Color.clear)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            TapGesture()
-                                .onEnded { value in
-                                    // Handle tap gesture if needed
-                                }
-                        )
-                }
-            }
-            .onAppear(perform: fetchData)
-            .onChange(of: timePeriod) { _ in fetchData() }
-            .onChange(of: customDateRange) { _ in fetchData() }
-        }
-    }
-
-    private func fetchData() {
-        let fetchRequest: NSFetchRequest<ResistanceTraining> = ResistanceTraining.fetchRequest()
-        let dateRange = timePeriod == .custom ? customDateRange : timePeriod.dateRange()
-        fetchRequest.predicate = NSPredicate(format: "note.date >= %@ AND note.date <= %@ AND painOrDiscomfortYN == YES", dateRange.lowerBound as NSDate, dateRange.upperBound as NSDate)
-
-        do {
-            let results = try viewContext.fetch(fetchRequest)
-            let groupedData = Dictionary(grouping: results, by: { Calendar.current.startOfDay(for: $0.note?.date ?? Date()) })
-
-            data = groupedData.map { (date, trainings) in
-                return PainData(date: date, count: trainings.count)
-            }
-            .sorted { $0.date < $1.date }
-        } catch {
-            print("Error fetching data: \(error)")
-        }
-    }
-}
-
-struct PainData: Identifiable {
-    var id = UUID()
-    var date: Date
-    var count: Int
-}
-
-// ResistanceTypeBarChart.swift
-import SwiftUI
-import CoreData
-import Charts
-
-struct ResistanceTypeBarChart: View {
-    @Environment(\.managedObjectContext) private var viewContext
-
-    var timePeriod: TimePeriod
-    var customDateRange: ClosedRange<Date>
-
-    @State private var data: [ResistanceTypeData] = []
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text("Resistance Type Utilization")
-                .font(.headline)
-
-            Chart {
-                ForEach(data) { item in
-                    BarMark(
-                        x: .value("Resistance Type", item.resistanceType),
-                        y: .value("Total Weight", item.totalWeight)
-                    )
-                }
-            }
-            .chartXAxis {
-                AxisMarks(values: .automatic) { value in
-                    AxisGridLine()
-                    AxisValueLabel()
-                }
-            }
-            .chartYAxis {
-                AxisMarks(position: .leading)
-            }
-            .frame(height: 200)
-            .chartOverlay { proxy in
-                GeometryReader { geometry in
-                    Rectangle()
-                        .fill(Color.clear)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            TapGesture()
-                                .onEnded { value in
-                                    // Handle tap gesture if needed
-                                }
-                        )
-                }
-            }
-            .onAppear(perform: fetchData)
-            .onChange(of: timePeriod) { _ in fetchData() }
-            .onChange(of: customDateRange) { _ in fetchData() }
-        }
-    }
-
-    private func fetchData() {
-        let fetchRequest: NSFetchRequest<ResistanceTraining> = ResistanceTraining.fetchRequest()
-        let dateRange = timePeriod == .custom ? customDateRange : timePeriod.dateRange()
-        fetchRequest.predicate = NSPredicate(format: "note.date >= %@ AND note.date <= %@", dateRange.lowerBound as NSDate, dateRange.upperBound as NSDate)
-
-        do {
-            let results = try viewContext.fetch(fetchRequest)
-            let groupedData = Dictionary(grouping: results, by: { $0.resistanceType ?? "Unspecified" })
-
-            data = groupedData.map { (resistanceType, trainings) in
-                let totalWeight = trainings.reduce(0) { $0 + $1.totalWeightLifted }
-                return ResistanceTypeData(resistanceType: resistanceType, totalWeight: totalWeight)
-            }
-        } catch {
-            print("Error fetching data: \(error)")
-        }
-    }
-}
-
-struct ResistanceTypeData: Identifiable {
-    var id = UUID()
-    var resistanceType: String
-    var totalWeight: Double
-}
-
-// RestTimeChart.swift
-import SwiftUI
-import CoreData
-import Charts
-
-struct RestTimeChart: View {
-    @Environment(\.managedObjectContext) private var viewContext
-
-    var timePeriod: TimePeriod
-    var customDateRange: ClosedRange<Date>
-
-    @State private var data: [RestTimeData] = []
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text("Rest Time Insights")
-                .font(.headline)
-
-            Chart {
-                ForEach(data) { dataPoint in
-                    LineMark(
-                        x: .value("Date", dataPoint.date),
-                        y: .value("Average Rest Time", dataPoint.averageRestTime)
-                    )
-                    .interpolationMethod(.catmullRom)
-                }
-            }
-            .chartXAxis {
-                AxisMarks(values: .stride(by: .day)) { value in
-                    AxisGridLine()
-                    AxisValueLabel(format: .dateTime.day().month())
-                }
-            }
-            .chartYAxis {
-                AxisMarks(position: .leading)
-            }
-            .frame(height: 200)
-            .chartOverlay { proxy in
-                GeometryReader { geometry in
-                    Rectangle()
-                        .fill(Color.clear)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture()
-                                .onChanged { value in
-                                    // Handle drag gesture if needed
-                                }
-                        )
-                }
-            }
-            .onAppear(perform: fetchData)
-            .onChange(of: timePeriod) { _ in fetchData() }
-            .onChange(of: customDateRange) { _ in fetchData() }
-        }
-    }
-
-    private func fetchData() {
-        let fetchRequest: NSFetchRequest<ResistanceTraining> = ResistanceTraining.fetchRequest()
-        let dateRange = timePeriod == .custom ? customDateRange : timePeriod.dateRange()
-        fetchRequest.predicate = NSPredicate(format: "note.date >= %@ AND note.date <= %@", dateRange.lowerBound as NSDate, dateRange.upperBound as NSDate)
-
-        do {
-            let results = try viewContext.fetch(fetchRequest)
-            let groupedData = Dictionary(grouping: results, by: { Calendar.current.startOfDay(for: $0.note?.date ?? Date()) })
-
-            data = groupedData.map { (date, trainings) in
-                let totalRestTime = trainings.reduce(0) { $0 + ($1.restTimeInSecondsBeforeCurrentSetOptional?.doubleValue ?? 0) }
-                let averageRestTime = totalRestTime / Double(trainings.count)
-                return RestTimeData(date: date, averageRestTime: averageRestTime)
-            }
-            .sorted { $0.date < $1.date }
-        } catch {
-            print("Error fetching data: \(error)")
-        }
-    }
-}
-
-struct RestTimeData: Identifiable {
-    var id = UUID()
-    var date: Date
-    var averageRestTime: Double
-}
-
