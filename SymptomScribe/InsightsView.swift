@@ -1,11 +1,3 @@
-//
-//  InsightsView.swift
-//  SymptomScribe
-//
-//  Created by Samay coding on 1/11/26.
-//
-
-
 import SwiftUI
 import CoreData
 
@@ -23,9 +15,16 @@ struct InsightsView: View {
     private var allNotes: FetchedResults<Note>
     
     var symptomFrequency: [(name: String, count: Int)] {
-        let presentSymptoms = allSymptoms.filter { $0.isPresent }
-        let grouped = Dictionary(grouping: presentSymptoms) { $0.symptomName ?? "Unknown" }
-        return grouped.map { (name: $0.key, count: $0.value.count) }
+        // Extract symptom names FIRST to avoid copying Core Data objects
+        let presentSymptomNames = allSymptoms.filter { $0.isPresent }.compactMap { $0.symptomName }
+        
+        // Count occurrences
+        var counts: [String: Int] = [:]
+        for name in presentSymptomNames {
+            counts[name, default: 0] += 1
+        }
+        
+        return counts.map { (name: $0.key, count: $0.value) }
             .sorted { $0.count > $1.count }
     }
     
@@ -154,7 +153,7 @@ struct InsightsView: View {
                         .padding(.vertical, 40)
                     } else {
                         VStack(spacing: 12) {
-                            ForEach(allNotes.prefix(5)) { note in
+                            ForEach(Array(allNotes.prefix(5)), id: \.objectID) { note in
                                 RecentActivityRow(note: note)
                             }
                         }
@@ -254,8 +253,14 @@ struct RecentActivityRow: View {
     let note: Note
     
     var symptomCount: Int {
-        guard let symptoms = note.symptoms as? Set<Symptom> else { return 0 }
-        return symptoms.filter { $0.isPresent }.count
+        guard let symptoms = note.symptoms else { return 0 }
+        var count = 0
+        for case let symptom as Symptom in symptoms {
+            if symptom.isPresent {
+                count += 1
+            }
+        }
+        return count
     }
     
     var body: some View {

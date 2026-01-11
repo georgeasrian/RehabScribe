@@ -6,23 +6,12 @@
         <attribute name="specificContextDetail" optional="YES" attributeType="String"/>
         <relationship name="note" maxCount="1" deletionRule="Nullify" destinationEntity="Note" inverseName="context" inverseEntity="Note"/>
     </entity>
-    <entity name="Entity" representedClassName="Entity" syncable="YES" codeGenerationType="class"/>
-    <entity name="Medication" representedClassName="Medication" syncable="YES" codeGenerationType="class">
-        <attribute name="brandNameOrGeneric" optional="YES" attributeType="String"/>
-        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="dosage" optional="YES" attributeType="String"/>
-        <attribute name="frequencyPerDay" optional="YES" attributeType="String"/>
-        <attribute name="medicationName" optional="YES" attributeType="String"/>
-        <attribute name="positiveOrNegativeImpact" optional="YES" attributeType="String"/>
-        <attribute name="sideEffects" optional="YES" attributeType="String"/>
-        <relationship name="note" maxCount="1" deletionRule="Nullify" destinationEntity="Note"/>
-    </entity>
     <entity name="Note" representedClassName="Note" syncable="YES">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="summary" optional="YES" attributeType="String"/>
         <attribute name="transcribedText" optional="YES" attributeType="String"/>
         <relationship name="context" toMany="YES" deletionRule="Nullify" destinationEntity="Context" inverseName="note" inverseEntity="Context"/>
-        <relationship name="symptoms" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Symptom" inverseName="note" inverseEntity="Symptom"/>
+        <relationship name="symptoms" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Symptom" inverseName="note" inverseEntity="Symptom"/>
     </entity>
     <entity name="Symptom" representedClassName="Symptom" syncable="YES">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
