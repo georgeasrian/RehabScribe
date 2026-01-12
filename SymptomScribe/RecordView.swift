@@ -100,7 +100,6 @@ struct RecordView: View {
                 • Sweating, nausea, or anxiety
                 • Cough, wheezing, or abdominal discomfort
 
-                Include when it occurred, what you were doing, and how long it lasted.
                 """)
                 .font(.subheadline)
                 .multilineTextAlignment(.leading)

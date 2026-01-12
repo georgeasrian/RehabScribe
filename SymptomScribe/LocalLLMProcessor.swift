@@ -102,7 +102,7 @@ class LocalLLMProcessor {
         JSON output:
         {"Chest pain at rest": true, "Chest pain on exertion": false, "Chest discomfort": false, "Palpitations": false, "Fatigue at rest": false, "Exertional fatigue": false, "Dyspnea": false, "Orthopnea": false, "Paroxysmal nocturnal dyspnea": false, "Syncope": false, "Lightheadedness": false, "Peripheral edema": false, "Cough / wheezing": false, "Abdominal pain": false, "Early satiety": false, "Diaphoresis": false, "Nausea / vomiting": false, "Anxiety / restlessness": false, "Feeling irregularity of HR": false, "Pulse deficit": false, "Tachycardia": false, "Bradycardia": false, "Dizziness at rest": false, "Dizziness upon standing": true, "Nocturia": false}
         
-        Now do this task:
+        That was just the example. Now do that process, but for this task:
         Patient note: "\(transcript)"
         JSON output:
         """

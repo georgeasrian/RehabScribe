@@ -109,11 +109,3 @@ struct NotesListView: View {
         }
     }
 }
-
-struct NotesListView_Previews: PreviewProvider {
-    static var previews: some View {
-        let context = PersistenceController.preview.container.viewContext
-        NotesListView()
-            .environment(\.managedObjectContext, context)
-    }
-}

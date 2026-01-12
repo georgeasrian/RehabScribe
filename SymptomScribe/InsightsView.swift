@@ -294,11 +294,3 @@ struct RecentActivityRow: View {
     }
 }
 
-struct InsightsView_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationView {
-            InsightsView()
-                .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-        }
-    }
-}
