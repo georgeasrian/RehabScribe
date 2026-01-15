@@ -134,45 +134,104 @@ class LocalLLMProcessor {
         """
     }
     
-    // Extract valid JSON object from LLM output
+    // Extract valid JSON object from LLM output with robust error handling
     func extractValidJSON(from rawOutput: String) -> String? {
         let trimmed = rawOutput.trimmingCharacters(in: .whitespacesAndNewlines)
         
+        // If empty, return empty JSON object
+        guard !trimmed.isEmpty else {
+            print("⚠️ Empty output from model, returning empty JSON")
+            return "{}"
+        }
+        
         // Look for JSON object starting with '{'
-        if let startIdx = trimmed.firstIndex(of: "{") {
-            var braceCount = 0
-            var endIdx: String.Index? = nil
-            
-            for idx in trimmed[startIdx...].indices {
-                if trimmed[idx] == "{" { braceCount += 1 }
-                else if trimmed[idx] == "}" { braceCount -= 1 }
-                
+        guard let startIdx = trimmed.firstIndex(of: "{") else {
+            print("⚠️ No JSON object found in output, returning empty JSON")
+            print("Raw output: \(trimmed)")
+            return "{}"
+        }
+        
+        var braceCount = 0
+        var endIdx: String.Index? = nil
+        
+        // Find matching closing brace
+        for idx in trimmed[startIdx...].indices {
+            let char = trimmed[idx]
+            if char == "{" { 
+                braceCount += 1 
+            } else if char == "}" { 
+                braceCount -= 1 
                 if braceCount == 0 {
                     endIdx = idx
                     break
                 }
             }
+        }
+        
+        var jsonString: String
+        
+        if let endIdx = endIdx {
+            // Complete JSON found
+            jsonString = String(trimmed[startIdx...endIdx])
+        } else {
+            // JSON is incomplete - try to repair it
+            print("⚠️ JSON incomplete, attempting repair...")
+            var partial = String(trimmed[startIdx...])
             
-            if let endIdx = endIdx {
-                return String(trimmed[startIdx...endIdx])
-            } else {
-                // JSON is incomplete - try to fix it
-                print("⚠️ JSON incomplete, attempting repair...")
-                var partial = String(trimmed[startIdx...])
-                
-                // Remove trailing comma if present
-                if partial.hasSuffix(",") {
+            // Remove trailing comma if present
+            partial = partial.trimmingCharacters(in: .whitespacesAndNewlines)
+            if partial.hasSuffix(",") {
+                partial = String(partial.dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            
+            // Remove any trailing invalid characters before the closing brace
+            while !partial.isEmpty && partial.last != "}" && partial.last != "{" {
+                let lastChar = partial.last!
+                if lastChar != "," && lastChar != "\n" && lastChar != "\r" && lastChar != " " && lastChar != "\t" {
+                    // Check if it's part of a valid JSON value
+                    if !lastChar.isLetter && !lastChar.isNumber && lastChar != "\"" && lastChar != "'" && lastChar != ":" {
+                        partial = String(partial.dropLast())
+                    } else {
+                        break
+                    }
+                } else {
                     partial = String(partial.dropLast())
                 }
+            }
+            
+            // Add missing closing brace(s) based on brace count
+            while braceCount > 0 {
+                partial += "}"
+                braceCount -= 1
+            }
+            
+            jsonString = partial
+            print("🔧 Repaired JSON: \(jsonString)")
+        }
+        
+        // Validate that the JSON is actually parseable
+        if let data = jsonString.data(using: .utf8) {
+            do {
+                let _ = try JSONSerialization.jsonObject(with: data)
+                print("✅ Valid JSON extracted")
+                return jsonString
+            } catch {
+                print("⚠️ Extracted JSON is invalid: \(error.localizedDescription)")
+                print("Attempted JSON: \(jsonString)")
                 
-                // Add missing closing brace
-                partial += "\n}"
+                // Try one more repair: ensure it's at least a valid empty object
+                if jsonString.trimmingCharacters(in: .whitespacesAndNewlines) == "{" {
+                    return "{}"
+                }
                 
-                print("🔧 Repaired JSON: \(partial)")
-                return partial
+                // Last resort: return empty JSON object
+                print("⚠️ Returning empty JSON as fallback")
+                return "{}"
             }
         }
         
-        return nil
+        // Fallback: return empty JSON object
+        print("⚠️ Could not convert to data, returning empty JSON")
+        return "{}"
     }
 }

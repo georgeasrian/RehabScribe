@@ -172,41 +172,79 @@ struct RecordView: View {
         statusMessage = "Processing your recording with AI..."
         submissionStatus = nil
         
+        // Add timeout protection (60 seconds)
+        var timeoutWorkItem: DispatchWorkItem?
+        timeoutWorkItem = DispatchWorkItem { [weak self] in
+            guard let self = self, self.isSubmitting else { return }
+            DispatchQueue.main.async {
+                self.isSubmitting = false
+                self.showError("Processing took too long. Please try again.")
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 60, execute: timeoutWorkItem!)
+        
         LocalLLMProcessor.shared.analyzeText(transcribedText) { output in
+            timeoutWorkItem?.cancel()
+            
             DispatchQueue.main.async {
                 self.isSubmitting = false
                 
-                guard let jsonString = output else {
-                    self.showError("Failed to process recording. Please try again.")
-                    return
-                }
+                // Handle nil output - use empty JSON as fallback
+                let jsonString = output ?? "{}"
                 
                 print("=== JSON STRING ===")
                 print(jsonString)
                 print("===================")
                 
-                guard let data = jsonString.data(using: .utf8),
-                      let symptomsDict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self.showError("Invalid response from AI model:\n\(jsonString)")
+                // Parse JSON with better error handling
+                guard let data = jsonString.data(using: .utf8) else {
+                    print("⚠️ Could not convert JSON string to data")
+                    // Fallback: save with empty symptoms
+                    let success = self.saveSymptoms([:], transcribedText: self.transcribedText)
+                    self.handleSubmissionResult(success: success, hadError: true)
                     return
                 }
                 
-                let success = self.saveSymptoms(symptomsDict, transcribedText: self.transcribedText)
+                var symptomsDict: [String: Any] = [:]
                 
-                if success {
-                    self.transcribedText = ""
-                    self.submissionStatus = "Symptoms recorded successfully!"
-                    self.alertTitle = "Success"
-                    self.alertMessage = "Your symptoms have been saved."
-                } else {
-                    self.submissionStatus = "Failed to save symptoms."
-                    self.alertTitle = "Error"
-                    self.alertMessage = "There was a problem saving your recording."
+                do {
+                    if let parsed = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        symptomsDict = parsed
+                    } else {
+                        print("⚠️ JSON is not a dictionary, using empty dict")
+                        symptomsDict = [:]
+                    }
+                } catch {
+                    print("⚠️ JSON parsing error: \(error.localizedDescription)")
+                    print("Raw JSON string: \(jsonString)")
+                    // Fallback: use empty dictionary (no symptoms detected)
+                    symptomsDict = [:]
                 }
                 
-                self.showingAlert = true
+                // Save symptoms (even if empty, we still save the note)
+                let success = self.saveSymptoms(symptomsDict, transcribedText: self.transcribedText)
+                self.handleSubmissionResult(success: success, hadError: false)
             }
         }
+    }
+    
+    private func handleSubmissionResult(success: Bool, hadError: Bool) {
+        if success {
+            self.transcribedText = ""
+            self.submissionStatus = "Symptoms recorded successfully!"
+            self.alertTitle = "Success"
+            if hadError {
+                self.alertMessage = "Your symptoms have been saved. Note: Some symptoms may not have been detected due to processing issues."
+            } else {
+                self.alertMessage = "Your symptoms have been saved."
+            }
+        } else {
+            self.submissionStatus = "Failed to save symptoms."
+            self.alertTitle = "Error"
+            self.alertMessage = "There was a problem saving your recording. Please try again."
+        }
+        
+        self.showingAlert = true
     }
     
     // MARK: - Core Data Saving
