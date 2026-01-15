@@ -106,6 +106,11 @@ struct ContentView: View {
                                 .bold()
                                 .frame(width: 100, alignment: .center)
                                 .padding(.horizontal, 8)
+                            
+                            Text("Severity")
+                                .bold()
+                                .frame(width: 80, alignment: .center)
+                                .padding(.horizontal, 8)
                         }
                         .padding(.vertical, 12)
                         .background(Color(.systemGray6))
@@ -138,6 +143,11 @@ struct ContentView: View {
                                             }
                                             .frame(width: 100, alignment: .center)
                                             .padding(.horizontal, 8)
+                                            
+                                            Text(symptom.severity > 0 && symptom.severity <= 10 ? "\(symptom.severity)/10" : "-")
+                                                .font(.caption)
+                                                .frame(width: 80, alignment: .center)
+                                                .padding(.horizontal, 8)
                                         }
                                         .padding(.vertical, 8)
                                         .background(symptom.isPresent ? Color.green.opacity(0.1) : Color(UIColor.secondarySystemBackground))
@@ -232,7 +242,7 @@ struct ContentView: View {
     }
     
     func generateCSVString() -> String {
-        var csvText = "Date,Time,Symptom Name,Status\n"
+        var csvText = "Date,Time,Symptom Name,Status,Severity\n"
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .short
@@ -246,8 +256,9 @@ struct ContentView: View {
             let timeString = timeFormatter.string(from: date)
             let symptomName = (symptom.symptomName ?? "Unknown").replacingOccurrences(of: "\"", with: "\"\"")
             let status = symptom.isPresent ? "Present" : "Absent"
+            let severity = symptom.severity > 0 && symptom.severity <= 10 ? "\(symptom.severity)" : ""
             
-            let line = "\"\(dateString)\",\"\(timeString)\",\"\(symptomName)\",\"\(status)\"\n"
+            let line = "\"\(dateString)\",\"\(timeString)\",\"\(symptomName)\",\"\(status)\",\"\(severity)\"\n"
             csvText += line
         }
         

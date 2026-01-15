@@ -93,14 +93,40 @@ class LocalLLMProcessor {
     }
     
     private func buildPrompt(transcript: String) -> String {
-        """
-        Task: Read the patient note and mark which symptoms are mentioned.
+        let symptomsList = allSymptoms.map { "\"\($0)\"" }.joined(separator: ", ")
+        return """
+        Task: Read the patient note and extract cardiac symptoms with their severity (1-10 scale, where 1 is mild and 10 is severe).
         Output ONLY valid JSON. No explanations.
         
+        CRITICAL RULES:
+        1. You MUST ONLY use symptom names from the predefined list below. NEVER create new symptom names.
+        2. Phrases like "seven out of ten", "8/10", "rating it 5", etc. are SEVERITY RATINGS, NOT symptom names.
+        3. Map natural language descriptions to the exact symptom names from the list (e.g., "chest pain" → "Chest pain at rest" or "Chest pain on exertion").
+        4. Extract severity numbers from phrases like "seven out of ten" = 7, "8/10" = 8, "rating it 5" = 5.
+        
+        For each symptom that is mentioned, include:
+        - "isPresent": true
+        - "severity": a number from 1-10 (or null if severity cannot be determined)
+        
+        For symptoms NOT mentioned, do NOT include them in the output (they will be marked as absent automatically).
+        
+        Available symptoms to check (USE ONLY THESE EXACT NAMES):
+        [\(symptomsList)]
+        
         Example:
-        Patient note: "I felt chest pain while resting and was dizzy when I stood up"
+        Patient note: "I just had chest pain seven out of ten"
         JSON output:
-        {"Chest pain at rest": true, "Dizziness upon standing": true}
+        {"Chest pain at rest": {"isPresent": true, "severity": 7}}
+        
+        Example:
+        Patient note: "I felt severe chest pain while resting, rating it 8 out of 10, and had mild dizziness when I stood up, maybe a 3"
+        JSON output:
+        {"Chest pain at rest": {"isPresent": true, "severity": 8}, "Dizziness upon standing": {"isPresent": true, "severity": 3}}
+        
+        Example:
+        Patient note: "Some chest discomfort when walking, not too bad"
+        JSON output:
+        {"Chest pain on exertion": {"isPresent": true, "severity": null}, "Chest discomfort": {"isPresent": true, "severity": null}}
         
         That was just the example. Now do that process, but for this task:
         Patient note: "\(transcript)"

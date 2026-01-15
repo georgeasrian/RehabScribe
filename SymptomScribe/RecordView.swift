@@ -186,7 +186,7 @@ struct RecordView: View {
                 print("===================")
                 
                 guard let data = jsonString.data(using: .utf8),
-                      let symptomsDict = try? JSONSerialization.jsonObject(with: data) as? [String: Bool] else {
+                      let symptomsDict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                     self.showError("Invalid response from AI model:\n\(jsonString)")
                     return
                 }
@@ -211,14 +211,41 @@ struct RecordView: View {
     
     // MARK: - Core Data Saving
     
-    private func saveSymptoms(_ symptoms: [String: Bool], transcribedText: String) -> Bool {
+    private func saveSymptoms(_ symptomsDict: [String: Any], transcribedText: String) -> Bool {
         // Create new Note
         let newNote = Note(context: viewContext)
         newNote.date = Date()
         newNote.transcribedText = transcribedText
         
+        // Parse symptoms from LLM response
+        // IMPORTANT: Only accept symptom names from the predefined list to prevent invalid entries
+        var detectedSymptoms: [String] = []
+        var symptomData: [String: (isPresent: Bool, severity: Int16?)] = [:]
+        let validSymptomNames = Set(LocalLLMProcessor.allSymptoms)
+        
+        for (symptomName, value) in symptomsDict {
+            // Filter out any symptom names not in the predefined list
+            guard validSymptomNames.contains(symptomName) else {
+                print("⚠️ Ignoring invalid symptom name from LLM: '\(symptomName)'")
+                continue
+            }
+            
+            if let symptomInfo = value as? [String: Any] {
+                let isPresent = symptomInfo["isPresent"] as? Bool ?? false
+                var severity: Int16? = nil
+                if let severityValue = symptomInfo["severity"] as? Int {
+                    severity = Int16(severityValue)
+                } else if let severityValue = symptomInfo["severity"] as? Int64 {
+                    severity = Int16(severityValue)
+                }
+                symptomData[symptomName] = (isPresent: isPresent, severity: severity)
+                if isPresent {
+                    detectedSymptoms.append(symptomName)
+                }
+            }
+        }
+        
         // Create summary from detected symptoms
-        let detectedSymptoms = symptoms.filter { $0.value }.map { $0.key }
         if detectedSymptoms.isEmpty {
             newNote.summary = "No symptoms detected"
         } else {
@@ -228,18 +255,28 @@ struct RecordView: View {
             }
         }
         
-        // Create Symptom entries for ALL symptoms (present and absent)
-        for (symptomName, isPresent) in symptoms {
+        // Create Symptom entries for ALL symptoms from allSymptoms list
+        // This ensures every symptom card is tracked for each recording
+        for symptomName in LocalLLMProcessor.allSymptoms {
             let symptomEntry = Symptom(context: viewContext)
             symptomEntry.note = newNote
             symptomEntry.date = newNote.date
             symptomEntry.symptomName = symptomName
-            symptomEntry.isPresent = isPresent
+            
+            if let data = symptomData[symptomName] {
+                // Symptom was detected by LLM
+                symptomEntry.isPresent = data.isPresent
+                symptomEntry.severity = data.severity ?? 0  // 0 means null/not specified
+            } else {
+                // Symptom was not detected/mentioned by LLM
+                symptomEntry.isPresent = false
+                symptomEntry.severity = 0  // 0 means null/not detected
+            }
         }
         
         do {
             try viewContext.save()
-            print("✅ Note and \(symptoms.count) symptoms saved successfully")
+            print("✅ Note and \(LocalLLMProcessor.allSymptoms.count) symptoms saved successfully")
             return true
         } catch {
             print("❌ Save error: \(error)")

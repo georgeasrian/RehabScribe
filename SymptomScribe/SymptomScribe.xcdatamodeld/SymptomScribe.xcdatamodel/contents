@@ -16,6 +16,7 @@
     <entity name="Symptom" representedClassName="Symptom" syncable="YES">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="isPresent" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="severity" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="symptomName" optional="YES" attributeType="String"/>
         <relationship name="note" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Note" inverseName="symptoms" inverseEntity="Note"/>
     </entity>

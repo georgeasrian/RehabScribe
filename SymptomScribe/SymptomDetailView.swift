@@ -95,22 +95,65 @@ struct SymptomDetailView: View {
                             .italic()
                             .padding()
                     } else {
-                        VStack(spacing: 8) {
+                        VStack(spacing: 12) {
                             ForEach(presentSymptoms, id: \.objectID) { symptom in
-                                HStack {
-                                    Image(systemName: "circle.fill")
-                                        .font(.caption)
-                                        .foregroundColor(.green)
-                                    Text(symptom.symptomName ?? "Unknown")
-                                        .font(.subheadline)
-                                    Spacer()
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Image(systemName: "circle.fill")
+                                            .font(.caption)
+                                            .foregroundColor(.green)
+                                        Text(symptom.symptomName ?? "Unknown")
+                                            .font(.subheadline)
+                                        Spacer()
+                                        
+                                        // Toggle to mark as absent
+                                        Toggle("", isOn: Binding(
+                                            get: { symptom.isPresent },
+                                            set: { symptom.isPresent = $0; saveContext() }
+                                        ))
+                                        .labelsHidden()
+                                    }
                                     
-                                    // Toggle to mark as absent
-                                    Toggle("", isOn: Binding(
-                                        get: { symptom.isPresent },
-                                        set: { symptom.isPresent = $0; saveContext() }
-                                    ))
-                                    .labelsHidden()
+                                    // Severity selector
+                                    HStack {
+                                        Text("Severity:")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        
+                                        // Severity slider or null indicator
+                                        if symptom.severity > 0 && symptom.severity <= 10 {
+                                            HStack(spacing: 4) {
+                                                Slider(value: Binding(
+                                                    get: { Double(symptom.severity) },
+                                                    set: { 
+                                                        symptom.severity = Int16($0)
+                                                        saveContext()
+                                                    }
+                                                ), in: 1...10, step: 1)
+                                                .frame(maxWidth: 150)
+                                                
+                                                Text("\(symptom.severity)/10")
+                                                    .font(.caption)
+                                                    .foregroundColor(.primary)
+                                                    .frame(width: 40, alignment: .trailing)
+                                            }
+                                        } else {
+                                            Text("Not specified")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                                .italic()
+                                            
+                                            Spacer()
+                                            
+                                            // Button to set severity
+                                            Button("Set") {
+                                                symptom.severity = 5  // Default to 5
+                                                saveContext()
+                                            }
+                                            .font(.caption)
+                                            .buttonStyle(.bordered)
+                                        }
+                                    }
                                 }
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
@@ -156,7 +199,14 @@ struct SymptomDetailView: View {
                                     // Toggle to mark as present
                                     Toggle("", isOn: Binding(
                                         get: { symptom.isPresent },
-                                        set: { symptom.isPresent = $0; saveContext() }
+                                        set: { 
+                                            symptom.isPresent = $0
+                                            // When marking as present, set default severity if not set
+                                            if $0 && symptom.severity == 0 {
+                                                symptom.severity = 5
+                                            }
+                                            saveContext() 
+                                        }
                                     ))
                                     .labelsHidden()
                                 }
@@ -194,6 +244,13 @@ struct SymptomDetailView: View {
             note.summary = detected.prefix(3).joined(separator: ", ")
             if detected.count > 3 {
                 note.summary! += ", ..."
+            }
+        }
+        
+        // Reset severity to 0 when marking as not present
+        for symptom in symptoms {
+            if !symptom.isPresent && symptom.severity > 0 {
+                symptom.severity = 0
             }
         }
         

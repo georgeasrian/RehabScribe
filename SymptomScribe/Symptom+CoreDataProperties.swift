@@ -14,6 +14,7 @@ extension Symptom {
     @NSManaged public var date: Date?
     @NSManaged public var symptomName: String?
     @NSManaged public var isPresent: Bool
+    @NSManaged public var severity: Int16
     @NSManaged public var note: Note?
 
 }
