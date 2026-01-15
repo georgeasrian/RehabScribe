@@ -93,7 +93,7 @@ class LocalLLMProcessor {
     }
     
     private func buildPrompt(transcript: String) -> String {
-        let symptomsList = allSymptoms.map { "\"\($0)\"" }.joined(separator: ", ")
+        let symptomsList = LocalLLMProcessor.allSymptoms.map { "\"\($0)\"" }.joined(separator: ", ")
         return """
         Task: Read the patient note and extract cardiac symptoms with their severity (1-10 scale, where 1 is mild and 10 is severe).
         Output ONLY valid JSON. No explanations.
