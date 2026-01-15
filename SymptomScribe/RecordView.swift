@@ -174,11 +174,12 @@ struct RecordView: View {
         
         // Add timeout protection (60 seconds)
         var timeoutWorkItem: DispatchWorkItem?
-        timeoutWorkItem = DispatchWorkItem { [weak self] in
-            guard let self = self, self.isSubmitting else { return }
+        timeoutWorkItem = DispatchWorkItem {
             DispatchQueue.main.async {
-                self.isSubmitting = false
-                self.showError("Processing took too long. Please try again.")
+                if self.isSubmitting {
+                    self.isSubmitting = false
+                    self.showError("Processing took too long. Please try again.")
+                }
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 60, execute: timeoutWorkItem!)
