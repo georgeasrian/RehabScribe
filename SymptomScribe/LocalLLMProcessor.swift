@@ -43,6 +43,9 @@ class LocalLLMProcessor {
     }
     
     private func loadModel() {
+        // Only load if not already loaded - CRITICAL for performance
+        guard llm == nil else { return }
+        
         guard let url = Bundle.main.url(
             forResource: "phi-2.Q4_K_M",
             withExtension: "gguf"
@@ -51,18 +54,22 @@ class LocalLLMProcessor {
             return
         }
         
+        // Reduced context size for faster processing: 2048 -> 1536
+        // LLM.swift should use Metal by default if available
         llm = LLM(
             from: url,
             template: .chatML(systemPrompt),
-            maxTokenCount: 2048
+            maxTokenCount: 1536  // Reduced from 2048 for speed
         )
-        print("Phi-2 model loaded successfully")
+        print("Phi-2 model loaded successfully (Metal should be active if available)")
     }
     
     /// Analyzes transcript and returns JSON with detected symptoms
     func analyzeText(_ transcript: String, completion: @escaping (String?) -> Void) {
-        // Reload model to reset state
-        loadModel()
+        // Ensure model is loaded, but don't reload every time
+        if llm == nil {
+            loadModel()
+        }
         
         guard let llm = llm else {
             print("LLM not yet loaded")
@@ -93,44 +100,17 @@ class LocalLLMProcessor {
     }
     
     private func buildPrompt(transcript: String) -> String {
+        // SHORTENED PROMPT for faster prefill - removed verbose examples
         let symptomsList = LocalLLMProcessor.allSymptoms.map { "\"\($0)\"" }.joined(separator: ", ")
         return """
-        Task: Read the patient note and extract cardiac symptoms with their severity (1-10 scale, where 1 is mild and 10 is severe).
-        Output ONLY valid JSON. No explanations.
+        Extract cardiac symptoms from patient note. Output ONLY valid JSON. Use only symptom names from: [\(symptomsList)]
         
-        CRITICAL RULES:
-        1. You MUST ONLY use symptom names from the predefined list below. NEVER create new symptom names.
-        2. Phrases like "seven out of ten", "8/10", "rating it 5", etc. are SEVERITY RATINGS, NOT symptom names.
-        3. Map natural language descriptions to the exact symptom names from the list (e.g., "chest pain" → "Chest pain at rest" or "Chest pain on exertion").
-        4. Extract severity numbers from phrases like "seven out of ten" = 7, "8/10" = 8, "rating it 5" = 5.
+        Rules: 1) Map descriptions to exact list names. 2) Extract severity (1-10) from phrases like "7/10" or "eight out of ten". 3) Include "isPresent": true and "severity": number (or null) for each symptom found.
         
-        For each symptom that is mentioned, include:
-        - "isPresent": true
-        - "severity": a number from 1-10 (or null if severity cannot be determined)
+        Example: "chest pain 7/10" → {"Chest pain at rest": {"isPresent": true, "severity": 7}}
         
-        For symptoms NOT mentioned, do NOT include them in the output (they will be marked as absent automatically).
-        
-        Available symptoms to check (USE ONLY THESE EXACT NAMES):
-        [\(symptomsList)]
-        
-        Example:
-        Patient note: "I just had chest pain seven out of ten"
-        JSON output:
-        {"Chest pain at rest": {"isPresent": true, "severity": 7}}
-        
-        Example:
-        Patient note: "I felt severe chest pain while resting, rating it 8 out of 10, and had mild dizziness when I stood up, maybe a 3"
-        JSON output:
-        {"Chest pain at rest": {"isPresent": true, "severity": 8}, "Dizziness upon standing": {"isPresent": true, "severity": 3}}
-        
-        Example:
-        Patient note: "Some chest discomfort when walking, not too bad"
-        JSON output:
-        {"Chest pain on exertion": {"isPresent": true, "severity": null}, "Chest discomfort": {"isPresent": true, "severity": null}}
-        
-        That was just the example. Now do that process, but for this task:
         Patient note: "\(transcript)"
-        JSON output:
+        JSON:
         """
     }
     
