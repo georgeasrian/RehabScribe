@@ -100,25 +100,73 @@ class LocalLLMProcessor {
     }
     
     private func buildPrompt(transcript: String) -> String {
-        // OPTIMIZED PROMPT - clearer instructions while still shorter than original
+        // SEMANTIC INTERPRETATION PROMPT - emphasizes understanding and reasoning
         let symptomsList = LocalLLMProcessor.allSymptoms.map { "\"\($0)\"" }.joined(separator: ", ")
         return """
-        Extract cardiac symptoms from patient note. Output ONLY valid JSON with no explanations.
+        You are a medical symptom analyzer. Your job is to THINK and INTERPRET the patient's description semantically, understanding what they MEAN, not just matching words.
         
-        SYMPTOM LIST (use ONLY these exact names): [\(symptomsList)]
+        SYMPTOM LIST (output ONLY these exact symptom names): [\(symptomsList)]
         
-        RULES:
-        1. Match patient descriptions to exact symptom names from the list (e.g., "chest pain at rest" → "Chest pain at rest", "leg swelling" → "Peripheral edema").
-        2. Extract severity numbers (1-10) from phrases like "7/10", "eight out of ten", "rating it 5".
-        3. For each detected symptom, include: {"isPresent": true, "severity": <number or null>}
-        4. Only include symptoms that are mentioned. Do NOT include symptoms that are absent.
+        HOW TO ANALYZE - Think conceptually about each symptom:
         
-        Examples:
-        Input: "I had chest pain at rest" → {"Chest pain at rest": {"isPresent": true, "severity": null}}
-        Input: "chest pain 7/10 while resting" → {"Chest pain at rest": {"isPresent": true, "severity": 7}}
+        CHEST PAIN SYMPTOMS - Understand context and timing:
+        - "Chest pain at rest" = any chest pain/discomfort/pressure/tightness occurring when patient is NOT physically active (sitting, lying, standing still, at desk, relaxing, sleeping, etc.)
+        - "Chest pain on exertion" = chest pain/discomfort during ANY physical activity (walking, exercise, climbing stairs, bending, lifting, moving around, etc.)
+        - "Chest discomfort" = any non-painful chest sensation (pressure, tightness, fullness, heaviness)
+        
+        BREATHING SYMPTOMS - Understand what difficulty breathing means:
+        - "Dyspnea" = ANY form of shortness of breath, difficulty breathing, feeling breathless, can't get enough air
+        - "Orthopnea" = trouble breathing when lying flat/flat on back, better when sitting up or propped up
+        - "Paroxysmal nocturnal dyspnea" = waking up suddenly at night feeling breathless, needing to sit up or stand
+        
+        FATIGUE - Understand when tiredness occurs:
+        - "Fatigue at rest" = feeling tired/weak/exhausted even when not active, at baseline rest
+        - "Exertional fatigue" = becoming unusually tired during or after physical activity
+        
+        DIZZINESS/LIGHTHEADEDNESS - Understand triggers and context:
+        - "Lightheadedness" = feeling faint, woozy, like might pass out, general unsteadiness
+        - "Dizziness at rest" = dizziness when sitting/lying/not moving
+        - "Dizziness upon standing" = dizziness specifically when standing up from sitting/lying (orthostatic)
+        
+        HEART RATE SYMPTOMS:
+        - "Palpitations" = feeling heart beating irregularly, skipping, fluttering, pounding, awareness of heartbeat
+        - "Tachycardia" = fast heart rate, racing heart, heart beating too fast
+        - "Bradycardia" = slow heart rate, heart beating too slow
+        - "Feeling irregularity of HR" = patient notices their heartbeat is irregular, not normal rhythm
+        - "Pulse deficit" = difference between heart rate and pulse rate (medical finding)
+        
+        OTHER SYMPTOMS:
+        - "Peripheral edema" = ANY swelling in legs, ankles, feet, lower extremities
+        - "Syncope" = fainting, passing out, loss of consciousness
+        - "Cough / wheezing" = coughing, wheezing, whistling sounds when breathing
+        - "Diaphoresis" = excessive sweating, profuse sweating
+        - "Nausea / vomiting" = feeling nauseous, throwing up, vomiting
+        - "Anxiety / restlessness" = feeling anxious, restless, uneasy, nervous
+        - "Early satiety" = feeling full quickly after eating little
+        - "Nocturia" = waking up at night to urinate
+        - "Abdominal pain" = pain in stomach/abdomen area
+        
+        YOUR APPROACH:
+        1. Read the patient's description carefully
+        2. Understand what they MEAN conceptually, not just what words they used
+        3. Think: "What symptom category does this description fall into?"
+        4. Match to the closest symptom from the list based on MEANING
+        5. Extract severity numbers if mentioned (1-10 scale)
+        
+        EXAMPLES OF REASONING (not phrase matching):
+        - Any description of chest pain while inactive → "Chest pain at rest" (whether they say "sitting", "at desk", "watching TV", "lying down", "not doing anything")
+        - Any description of chest pain during activity → "Chest pain on exertion" (whether they say "walking", "climbing stairs", "during exercise", "while active")
+        - Any description of trouble breathing when lying down → "Orthopnea" (whether they say "can't breathe flat", "need pillows", "sit up to breathe")
+        - Any description of leg/ankle swelling → "Peripheral edema" (whether they say "swollen legs", "ankles puffy", "feet bloated")
+        
+        OUTPUT FORMAT:
+        For each symptom found: {"<Exact Symptom Name from list>": {"isPresent": true, "severity": <number 1-10 or null>}}
+        Only include symptoms that ARE present. Don't include symptoms not mentioned.
+        Extract severity from any format: "7/10", "eight out of ten", "rating 5", "mild", "severe", etc.
         
         Patient note: "\(transcript)"
-        JSON:
+        
+        Think through what symptoms are described, then output JSON only:
         """
     }
     

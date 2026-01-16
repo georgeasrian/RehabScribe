@@ -267,22 +267,28 @@ struct RecordView: View {
     }
     
     private func sendNotification(title: String, body: String) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-        
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil // Send immediately
-        )
-        
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("⚠️ Failed to send notification: \(error.localizedDescription)")
-            } else {
-                print("✅ Notification sent: \(title)")
+        // Check if app is in foreground - if so, use UNNotificationPresentationOption
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
+            content.badge = 1
+            
+            let request = UNNotificationRequest(
+                identifier: UUID().uuidString,
+                content: content,
+                trigger: nil // Send immediately
+            )
+            
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("⚠️ Failed to send notification: \(error.localizedDescription)")
+                    print("⚠️ Notification settings: authorized=\(settings.authorizationStatus == .authorized)")
+                } else {
+                    print("✅ Notification sent: \(title)")
+                    print("✅ Notification settings: authorized=\(settings.authorizationStatus == .authorized), alert=\(settings.alertSetting.rawValue)")
+                }
             }
         }
     }
