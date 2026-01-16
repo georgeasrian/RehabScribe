@@ -100,14 +100,22 @@ class LocalLLMProcessor {
     }
     
     private func buildPrompt(transcript: String) -> String {
-        // SHORTENED PROMPT for faster prefill - removed verbose examples
+        // OPTIMIZED PROMPT - clearer instructions while still shorter than original
         let symptomsList = LocalLLMProcessor.allSymptoms.map { "\"\($0)\"" }.joined(separator: ", ")
         return """
-        Extract cardiac symptoms from patient note. Output ONLY valid JSON. Use only symptom names from: [\(symptomsList)]
+        Extract cardiac symptoms from patient note. Output ONLY valid JSON with no explanations.
         
-        Rules: 1) Map descriptions to exact list names. 2) Extract severity (1-10) from phrases like "7/10" or "eight out of ten". 3) Include "isPresent": true and "severity": number (or null) for each symptom found.
+        SYMPTOM LIST (use ONLY these exact names): [\(symptomsList)]
         
-        Example: "chest pain 7/10" → {"Chest pain at rest": {"isPresent": true, "severity": 7}}
+        RULES:
+        1. Match patient descriptions to exact symptom names from the list (e.g., "chest pain at rest" → "Chest pain at rest", "leg swelling" → "Peripheral edema").
+        2. Extract severity numbers (1-10) from phrases like "7/10", "eight out of ten", "rating it 5".
+        3. For each detected symptom, include: {"isPresent": true, "severity": <number or null>}
+        4. Only include symptoms that are mentioned. Do NOT include symptoms that are absent.
+        
+        Examples:
+        Input: "I had chest pain at rest" → {"Chest pain at rest": {"isPresent": true, "severity": null}}
+        Input: "chest pain 7/10 while resting" → {"Chest pain at rest": {"isPresent": true, "severity": 7}}
         
         Patient note: "\(transcript)"
         JSON:
