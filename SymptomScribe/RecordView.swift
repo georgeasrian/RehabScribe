@@ -1,6 +1,7 @@
 import SwiftUI
 import Speech
 import CoreData
+import UserNotifications
 
 struct RecordView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -27,6 +28,16 @@ struct RecordView: View {
                     .cornerRadius(8)
                     .multilineTextAlignment(.center)
                     .foregroundColor(.blue)
+            }
+            
+            // Processing Status
+            if isSubmitting {
+                Text("Processing...")
+                    .padding()
+                    .background(Color.orange.opacity(0.3))
+                    .foregroundColor(.orange)
+                    .cornerRadius(8)
+                    .multilineTextAlignment(.center)
             }
             
             // Submission Status Message
@@ -169,24 +180,21 @@ struct RecordView: View {
     func submitRecording() {
         guard !isSubmitting else { return }
         isSubmitting = true
-        statusMessage = "Processing your recording with AI..."
+        statusMessage = "Processing..."
         submissionStatus = nil
         
-        // Add timeout protection (60 seconds)
-        var timeoutWorkItem: DispatchWorkItem?
-        timeoutWorkItem = DispatchWorkItem {
-            DispatchQueue.main.async {
-                if self.isSubmitting {
-                    self.isSubmitting = false
-                    self.showError("Processing took too long. Please try again.")
-                }
-            }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 60, execute: timeoutWorkItem!)
+        // Request notification permission if not already granted
+        requestNotificationPermission()
         
+        // Start background task to allow processing when app goes to background
+        var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+        backgroundTaskID = UIApplication.shared.beginBackgroundTask {
+            // Called when background time is about to expire - task will be ended in completion handler
+            print("⚠️ Background task time expiring soon")
+        }
+        
+        let capturedTaskID = backgroundTaskID
         LocalLLMProcessor.shared.analyzeText(transcribedText) { output in
-            timeoutWorkItem?.cancel()
-            
             DispatchQueue.main.async {
                 self.isSubmitting = false
                 
@@ -202,6 +210,12 @@ struct RecordView: View {
                     print("⚠️ Could not convert JSON string to data")
                     // Fallback: save with empty symptoms
                     let success = self.saveSymptoms([:], transcribedText: self.transcribedText)
+                    
+                    // End background task
+                    if capturedTaskID != .invalid {
+                        UIApplication.shared.endBackgroundTask(capturedTaskID)
+                    }
+                    
                     self.handleSubmissionResult(success: success, hadError: true)
                     return
                 }
@@ -224,7 +238,51 @@ struct RecordView: View {
                 
                 // Save symptoms (even if empty, we still save the note)
                 let success = self.saveSymptoms(symptomsDict, transcribedText: self.transcribedText)
+                
+                // End background task
+                if capturedTaskID != .invalid {
+                    UIApplication.shared.endBackgroundTask(capturedTaskID)
+                }
+                
+                // Send notification if processing completed
+                if success {
+                    self.sendNotification(title: "Symptom Interpretation Logged", body: "Your symptoms have been saved and analyzed.")
+                }
+                
                 self.handleSubmissionResult(success: success, hadError: false)
+            }
+        }
+    }
+    
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if let error = error {
+                print("⚠️ Notification permission error: \(error.localizedDescription)")
+            } else if granted {
+                print("✅ Notification permission granted")
+            } else {
+                print("⚠️ Notification permission denied")
+            }
+        }
+    }
+    
+    private func sendNotification(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: nil // Send immediately
+        )
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("⚠️ Failed to send notification: \(error.localizedDescription)")
+            } else {
+                print("✅ Notification sent: \(title)")
             }
         }
     }
