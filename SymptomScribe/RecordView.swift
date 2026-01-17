@@ -210,7 +210,9 @@ struct RecordView: View {
         
         // Process immediately while app is in foreground (Metal works best here)
         LocalLLMProcessor.shared.analyzeText(transcribedText) { output in
-            print("🟢 submitRecording: Completion callback received, output: \(output?.prefix(100) ?? "nil")")
+            let appState = UIApplication.shared.applicationState
+            let stateString = appState == .active ? "FOREGROUND" : appState == .background ? "BACKGROUND" : "INACTIVE"
+            print("🟢 submitRecording: Completion callback received (app state: \(stateString)), output: \(output?.prefix(100) ?? "nil")")
             DispatchQueue.main.async {
                 self.isSubmitting = false
                 self.statusMessage = "" // Clear processing message
