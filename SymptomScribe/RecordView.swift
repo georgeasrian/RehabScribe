@@ -186,14 +186,22 @@ struct RecordView: View {
         // Request notification permission if not already granted
         requestNotificationPermission()
         
-        // Start background task to allow processing when app goes to background
+        // IMPORTANT: Metal GPU work requires app to be in foreground.
+        // Background task helps extend time, but Metal calls will fail if app is backgrounded.
+        // Processing should ideally complete while app is still active.
         var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
-        backgroundTaskID = UIApplication.shared.beginBackgroundTask {
-            // Called when background time is about to expire - task will be ended in completion handler
-            print("⚠️ Background task time expiring soon")
-        }
+        backgroundTaskID = UIApplication.shared.beginBackgroundTask(expirationHandler: {
+            // Called when background time is about to expire
+            print("⚠️ Background task time expiring - Metal GPU work may fail if app is backgrounded")
+            if backgroundTaskID != .invalid {
+                UIApplication.shared.endBackgroundTask(backgroundTaskID)
+                backgroundTaskID = .invalid
+            }
+        })
         
         let capturedTaskID = backgroundTaskID
+        
+        // Process immediately while app is in foreground (Metal works best here)
         LocalLLMProcessor.shared.analyzeText(transcribedText) { output in
             DispatchQueue.main.async {
                 self.isSubmitting = false

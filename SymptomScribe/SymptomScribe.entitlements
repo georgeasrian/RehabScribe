@@ -4,5 +4,9 @@
 <dict>
     <key>com.apple.developer.healthkit</key>
     <true/>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>processing</string>
+    </array>
 </dict>
 </plist>
