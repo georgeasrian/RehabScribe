@@ -32,16 +32,24 @@ struct RecordView: View {
             
             // Processing Status
             if isSubmitting {
-                Text("Processing...")
-                    .padding()
-                    .background(Color.orange.opacity(0.3))
-                    .foregroundColor(.orange)
-                    .cornerRadius(8)
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 8) {
+                    Text("Processing...")
+                        .font(.headline)
+                    if !statusMessage.isEmpty {
+                        Text(statusMessage)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding()
+                .background(Color.orange.opacity(0.3))
+                .foregroundColor(.orange)
+                .cornerRadius(8)
+                .multilineTextAlignment(.center)
             }
             
             // Submission Status Message
-            if let submissionStatus = submissionStatus {
+            if let submissionStatus = submissionStatus, !isSubmitting {
                 Text(submissionStatus)
                     .padding()
                     .background(submissionStatus.contains("successfully") ? Color.green.opacity(0.3) : Color.red.opacity(0.3))
@@ -180,8 +188,8 @@ struct RecordView: View {
     func submitRecording() {
         guard !isSubmitting else { return }
         isSubmitting = true
-        statusMessage = "Processing..."
-        submissionStatus = nil
+        statusMessage = "Processing... This may take a minute or two."
+        submissionStatus = "Analyzing symptoms..."
         
         // Request notification permission if not already granted
         requestNotificationPermission()
@@ -191,20 +199,21 @@ struct RecordView: View {
         // Processing should ideally complete while app is still active.
         var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
         backgroundTaskID = UIApplication.shared.beginBackgroundTask(expirationHandler: {
-            // Called when background time is about to expire
-            print("⚠️ Background task time expiring - Metal GPU work may fail if app is backgrounded")
-            if backgroundTaskID != .invalid {
-                UIApplication.shared.endBackgroundTask(backgroundTaskID)
-                backgroundTaskID = .invalid
-            }
+            // Called when background time is about to expire (~30 seconds)
+            // Don't end task here - let it continue processing if possible
+            print("⚠️ Background task time expiring soon - processing may continue but Metal may fail if backgrounded")
+            // Note: We don't end the task here to allow processing to continue
         })
         
         let capturedTaskID = backgroundTaskID
+        print("🟢 submitRecording: Starting analysis for: '\(transcribedText)'")
         
         // Process immediately while app is in foreground (Metal works best here)
         LocalLLMProcessor.shared.analyzeText(transcribedText) { output in
+            print("🟢 submitRecording: Completion callback received, output: \(output?.prefix(100) ?? "nil")")
             DispatchQueue.main.async {
                 self.isSubmitting = false
+                self.statusMessage = "" // Clear processing message
                 
                 // Handle nil output - use empty JSON as fallback
                 let jsonString = output ?? "{}"

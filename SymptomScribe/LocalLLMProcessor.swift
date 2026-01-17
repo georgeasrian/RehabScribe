@@ -78,23 +78,34 @@ class LocalLLMProcessor {
         }
         
         let userMessage = buildPrompt(transcript: transcript)
+        print("🔵 Starting LLM analysis for transcript: '\(transcript)'")
         
         Task.detached {
-            let inputSeq = llm.preprocess(userMessage, [])
-            let rawOutput = await llm.getCompletion(from: inputSeq)
-            
-            print("=== RAW LLM OUTPUT ===")
-            print(rawOutput)
-            print("======================")
-            
-            let cleanedOutput = self.extractValidJSON(from: rawOutput)
-            
-            print("=== CLEANED JSON ===")
-            print(cleanedOutput ?? "nil")
-            print("====================")
-            
-            DispatchQueue.main.async {
-                completion(cleanedOutput)
+            do {
+                let inputSeq = llm.preprocess(userMessage, [])
+                print("🔵 LLM preprocessing complete, starting completion...")
+                
+                let rawOutput = await llm.getCompletion(from: inputSeq)
+                
+                print("=== RAW LLM OUTPUT ===")
+                print(rawOutput)
+                print("======================")
+                
+                let cleanedOutput = self.extractValidJSON(from: rawOutput)
+                
+                print("=== CLEANED JSON ===")
+                print(cleanedOutput ?? "nil")
+                print("====================")
+                
+                DispatchQueue.main.async {
+                    completion(cleanedOutput)
+                }
+            } catch {
+                print("❌ LLM processing error: \(error.localizedDescription)")
+                print("❌ Error details: \(error)")
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
             }
         }
     }
