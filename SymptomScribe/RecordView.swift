@@ -71,13 +71,13 @@ struct RecordView: View {
                             .padding(.bottom, 4)
                         
                         Text("""
-                        Describe your rehabilitation exercises. Include:
-                        • Exercise name (e.g., "Supine heel slides", "Quad sets")
-                        • Set number and number of reps
-                        • Any pain or discomfort
-        
-                        Example: "Supine heel slides, set one, ten reps, no discomfort. Set two, ten reps, slight pain."
-                        """)
+                            Describe your rehabilitation exercises. Include:
+                            • Exercise name (e.g., "Supine heel slides", "Quad sets")
+                            • Set number and number of reps
+                            • Any pain or discomfort
+            
+                            Example: "Supine heel slides, set one, ten reps, no discomfort. Set two, ten reps, slight pain."
+                            """)
                             .font(.subheadline)
                     } else {
                         Text("KOOS JR Questionnaire")
@@ -85,18 +85,18 @@ struct RecordView: View {
                             .padding(.bottom, 4)
                         
                         Text("""
-                        Answer these 7 questions about your knee:
-                        1. Stiffness after wakening
-                        2. Twisting/pivoting pain
-                        3. Straightening knee fully
-                        4. Going up or down stairs
-                        5. Standing upright
-                        6. Rising from sitting
-                        7. Bending to floor/picking up object
-        
-                        For each, say: None, Mild, Moderate, Severe, or Extreme
-                        You can speak freely about all questions.
-                        """)
+                            Answer these 7 questions about your knee:
+                            1. Stiffness after wakening
+                            2. Twisting/pivoting pain
+                            3. Straightening knee fully
+                            4. Going up or down stairs
+                            5. Standing upright
+                            6. Rising from sitting
+                            7. Bending to floor/picking up object
+            
+                            For each, say: None, Mild, Moderate, Severe, or Extreme
+                            You can speak freely about all questions.
+                            """)
                             .font(.subheadline)
                     }
                 }
