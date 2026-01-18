@@ -14,23 +14,24 @@ struct MainTabView: View {
                 Text("Record")
             }
             
-            // 2. Insights Tab
+            // 2. Exercise Log Tab
             NavigationView {
-                InsightsView()
-            }
-            .tabItem {
-                Image(systemName: "chart.bar.fill")
-                Text("Insights")
-            }
-            
-            // 3. Symptom Log Tab
-            NavigationView {
-                ContentView()
+                ExerciseLogView()
                     .environment(\.managedObjectContext, viewContext)
             }
             .tabItem {
-                Image(systemName: "list.bullet.clipboard")
-                Text("Symptom Log")
+                Image(systemName: "figure.strengthtraining.traditional")
+                Text("Exercise Log")
+            }
+            
+            // 3. KOOS JR Tab
+            NavigationView {
+                KOOSJRView()
+                    .environment(\.managedObjectContext, viewContext)
+            }
+            .tabItem {
+                Image(systemName: "list.clipboard")
+                Text("KOOS JR")
             }
         }
     }

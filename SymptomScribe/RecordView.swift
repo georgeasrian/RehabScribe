@@ -2,6 +2,11 @@ import SwiftUI
 import Speech
 import CoreData
 
+enum RecordingMode {
+    case exercises
+    case koosJR
+}
+
 struct RecordView: View {
     @Environment(\.managedObjectContext) private var viewContext
     
@@ -14,9 +19,91 @@ struct RecordView: View {
     @State private var showingAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
+    @State private var recordingMode: RecordingMode? = nil
     
     var body: some View {
         VStack(spacing: 20) {
+            
+            // Mode Selection Buttons (shown when not recording)
+            if !isRecording && recordingMode == nil {
+                VStack(spacing: 16) {
+                    Button(action: {
+                        recordingMode = .exercises
+                    }) {
+                        VStack(spacing: 8) {
+                            Image(systemName: "figure.strengthtraining.traditional")
+                                .font(.system(size: 40))
+                            Text("Record Exercise Session")
+                                .font(.headline)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                    }
+                    
+                    Button(action: {
+                        recordingMode = .koosJR
+                    }) {
+                        VStack(spacing: 8) {
+                            Image(systemName: "list.clipboard")
+                                .font(.system(size: 40))
+                            Text("Record KOOS JR Survey")
+                                .font(.headline)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal)
+            }
+            
+            // Instructions for current mode
+            if let mode = recordingMode {
+                VStack(alignment: .leading, spacing: 12) {
+                    if mode == .exercises {
+                        Text("Exercise Recording Mode")
+                            .font(.headline)
+                            .padding(.bottom, 4)
+                        
+                        Text("""
+                        Describe your rehabilitation exercises. Include:
+                        • Exercise name (e.g., "Supine heel slides", "Quad sets")
+                        • Set number and number of reps
+                        • Any pain or discomfort
+        
+                        Example: "Supine heel slides, set one, ten reps, no discomfort. Set two, ten reps, slight pain."
+                        """)
+                            .font(.subheadline)
+                    } else {
+                        Text("KOOS JR Questionnaire")
+                            .font(.headline)
+                            .padding(.bottom, 4)
+                        
+                        Text("""
+                        Answer these 7 questions about your knee:
+                        1. Stiffness after wakening
+                        2. Twisting/pivoting pain
+                        3. Straightening knee fully
+                        4. Going up or down stairs
+                        5. Standing upright
+                        6. Rising from sitting
+                        7. Bending to floor/picking up object
+        
+                        For each, say: None, Mild, Moderate, Severe, or Extreme
+                        You can speak freely about all questions.
+                        """)
+                            .font(.subheadline)
+                    }
+                }
+                .padding()
+                .background(Color(UIColor.secondarySystemBackground))
+                .cornerRadius(8)
+            }
             
             // Status Message During Recording
             if isRecording {
@@ -39,95 +126,78 @@ struct RecordView: View {
                     .multilineTextAlignment(.center)
             }
             
-            // Recording Buttons
-            HStack {
-                Button(action: {
-                    if !isRecording {
-                        startRecording()
+            // Recording Buttons (shown when mode is selected)
+            if recordingMode != nil {
+                HStack {
+                    Button(action: {
+                        if !isRecording {
+                            startRecording()
+                        }
+                    }) {
+                        Text("Record")
+                            .frame(minWidth: 0, maxWidth: .infinity)
+                            .padding()
+                            .background(isRecording ? Color.gray : Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
                     }
-                }) {
-                    Text("Record")
-                        .frame(minWidth: 0, maxWidth: .infinity)
-                        .padding()
-                        .background(isRecording ? Color.gray : Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                    .disabled(isRecording)
+                    
+                    Button(action: {
+                        if isRecording {
+                            stopRecording()
+                        }
+                    }) {
+                        Text("Stop")
+                            .frame(minWidth: 0, maxWidth: .infinity)
+                            .padding()
+                            .background(isRecording ? Color.red : Color.gray)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
+                    .disabled(!isRecording)
                 }
-                .disabled(isRecording)
+                .padding(.horizontal)
                 
-                Button(action: {
-                    if isRecording {
-                        stopRecording()
-                    }
-                }) {
-                    Text("Stop")
+                // Submit Button
+                Button(action: submitRecording) {
+                    Text("Submit")
                         .frame(minWidth: 0, maxWidth: .infinity)
                         .padding()
-                        .background(isRecording ? Color.red : Color.gray)
+                        .background(transcribedText.isEmpty || isRecording ? Color.gray : Color.green)
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
-                .disabled(!isRecording)
+                .disabled(transcribedText.isEmpty || isRecording || isSubmitting)
+                .padding(.horizontal)
+                
+                // Back button to change mode
+                Button(action: {
+                    recordingMode = nil
+                    transcribedText = ""
+                    submissionStatus = nil
+                    statusMessage = ""
+                }) {
+                    Text("Change Mode")
+                        .foregroundColor(.blue)
+                }
+                .padding(.top, 8)
             }
-            .padding(.horizontal)
-            
-            // Submit Button
-            Button(action: submitRecording) {
-                Text("Submit")
-                    .frame(minWidth: 0, maxWidth: .infinity)
-                    .padding()
-                    .background(transcribedText.isEmpty || isRecording ? Color.gray : Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            .disabled(transcribedText.isEmpty || isRecording || isSubmitting)
-            .padding(.horizontal)
-            
-            // Instructions
-            Text("Cardiology Symptom Recorder")
-                .font(.headline)
-                .padding(.top, 20)
-            
-            Text("""
-                Please describe any cardiac symptoms you're experiencing:
-
-                • Chest pain or discomfort (at rest or during activity)
-                • Palpitations or irregular heartbeats
-                • Shortness of breath or difficulty breathing
-                • Fatigue, weakness, or lightheadedness
-                • Swelling in legs, ankles, or feet
-                • Dizziness, fainting, or near-fainting episodes
-                • Sweating, nausea, or anxiety
-                • Cough, wheezing, or abdominal discomfort
-
-                """)
-                .font(.subheadline)
-                .multilineTextAlignment(.leading)
-                .padding()
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(8)
             
             Spacer()
-            
-            // Navigation to Recordings
-            NavigationLink(destination: NotesListView()) {
-                Text("View Recordings")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(idealWidth: 100)
-                    .padding()
-                    .background(Color.blue)
-                    .cornerRadius(10)
-            }
         }
         .padding()
-        .navigationTitle("Record Symptoms")
+        .navigationTitle("Record")
         .alert(isPresented: $showingAlert) {
             Alert(
                 title: Text(alertTitle),
                 message: Text(alertMessage),
                 dismissButton: .default(Text("OK")) {
                     submissionStatus = nil
+                    if submissionStatus?.contains("successfully") == true {
+                        recordingMode = nil
+                        transcribedText = ""
+                    }
                 }
             )
         }
@@ -167,7 +237,7 @@ struct RecordView: View {
     }
     
     func submitRecording() {
-        guard !isSubmitting else { return }
+        guard !isSubmitting, let mode = recordingMode else { return }
         isSubmitting = true
         statusMessage = "Processing your recording with AI..."
         submissionStatus = nil
@@ -184,14 +254,14 @@ struct RecordView: View {
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 60, execute: timeoutWorkItem!)
         
-        LocalLLMProcessor.shared.analyzeText(transcribedText) { output in
+        let completion: (String?) -> Void = { output in
             timeoutWorkItem?.cancel()
             
             DispatchQueue.main.async {
                 self.isSubmitting = false
                 
                 // Handle nil output - use empty JSON as fallback
-                let jsonString = output ?? "{}"
+                let jsonString = output ?? (mode == .exercises ? "[]" : "{}")
                 
                 print("=== JSON STRING ===")
                 print(jsonString)
@@ -200,47 +270,68 @@ struct RecordView: View {
                 // Parse JSON with better error handling
                 guard let data = jsonString.data(using: .utf8) else {
                     print("⚠️ Could not convert JSON string to data")
-                    // Fallback: save with empty symptoms
-                    let success = self.saveSymptoms([:], transcribedText: self.transcribedText)
-                    self.handleSubmissionResult(success: success, hadError: true)
+                    let success = mode == .exercises ? self.saveExerciseSets([], transcribedText: self.transcribedText) : self.saveKOOSJR([:], transcribedText: self.transcribedText)
+                    self.handleSubmissionResult(success: success, hadError: true, mode: mode)
                     return
                 }
                 
-                var symptomsDict: [String: Any] = [:]
-                
-                do {
-                    if let parsed = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                        symptomsDict = parsed
-                    } else {
-                        print("⚠️ JSON is not a dictionary, using empty dict")
-                        symptomsDict = [:]
+                if mode == .exercises {
+                    // Parse array of exercise sets
+                    do {
+                        if let setsArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                            let success = self.saveExerciseSets(setsArray, transcribedText: self.transcribedText)
+                            self.handleSubmissionResult(success: success, hadError: false, mode: mode)
+                        } else {
+                            print("⚠️ JSON is not an array")
+                            let success = self.saveExerciseSets([], transcribedText: self.transcribedText)
+                            self.handleSubmissionResult(success: success, hadError: true, mode: mode)
+                        }
+                    } catch {
+                        print("⚠️ JSON parsing error: \(error.localizedDescription)")
+                        let success = self.saveExerciseSets([], transcribedText: self.transcribedText)
+                        self.handleSubmissionResult(success: success, hadError: true, mode: mode)
                     }
-                } catch {
-                    print("⚠️ JSON parsing error: \(error.localizedDescription)")
-                    print("Raw JSON string: \(jsonString)")
-                    // Fallback: use empty dictionary (no symptoms detected)
-                    symptomsDict = [:]
+                } else {
+                    // Parse KOOS JR responses
+                    do {
+                        if let responsesDict = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                            let success = self.saveKOOSJR(responsesDict, transcribedText: self.transcribedText)
+                            self.handleSubmissionResult(success: success, hadError: false, mode: mode)
+                        } else {
+                            print("⚠️ JSON is not a dictionary")
+                            let success = self.saveKOOSJR([:], transcribedText: self.transcribedText)
+                            self.handleSubmissionResult(success: success, hadError: true, mode: mode)
+                        }
+                    } catch {
+                        print("⚠️ JSON parsing error: \(error.localizedDescription)")
+                        let success = self.saveKOOSJR([:], transcribedText: self.transcribedText)
+                        self.handleSubmissionResult(success: success, hadError: true, mode: mode)
+                    }
                 }
-                
-                // Save symptoms (even if empty, we still save the note)
-                let success = self.saveSymptoms(symptomsDict, transcribedText: self.transcribedText)
-                self.handleSubmissionResult(success: success, hadError: false)
             }
+        }
+        
+        if mode == .exercises {
+            LocalLLMProcessor.shared.analyzeExerciseText(transcribedText, completion: completion)
+        } else {
+            LocalLLMProcessor.shared.analyzeKOOSJRText(transcribedText, completion: completion)
         }
     }
     
-    private func handleSubmissionResult(success: Bool, hadError: Bool) {
+    private func handleSubmissionResult(success: Bool, hadError: Bool, mode: RecordingMode) {
         if success {
             self.transcribedText = ""
-            self.submissionStatus = "Symptoms recorded successfully!"
+            let modeText = mode == .exercises ? "exercises" : "KOOS JR responses"
+            self.submissionStatus = "\(modeText.capitalized) recorded successfully!"
             self.alertTitle = "Success"
             if hadError {
-                self.alertMessage = "Your symptoms have been saved. Note: Some symptoms may not have been detected due to processing issues."
+                self.alertMessage = "Your \(modeText) have been saved. Note: Some data may not have been detected due to processing issues."
             } else {
-                self.alertMessage = "Your symptoms have been saved."
+                self.alertMessage = "Your \(modeText) have been saved."
             }
         } else {
-            self.submissionStatus = "Failed to save symptoms."
+            let modeText = mode == .exercises ? "exercises" : "KOOS JR responses"
+            self.submissionStatus = "Failed to save \(modeText)."
             self.alertTitle = "Error"
             self.alertMessage = "There was a problem saving your recording. Please try again."
         }
@@ -250,72 +341,89 @@ struct RecordView: View {
     
     // MARK: - Core Data Saving
     
-    private func saveSymptoms(_ symptomsDict: [String: Any], transcribedText: String) -> Bool {
-        // Create new Note
-        let newNote = Note(context: viewContext)
-        newNote.date = Date()
-        newNote.transcribedText = transcribedText
+    private func saveExerciseSets(_ setsArray: [[String: Any]], transcribedText: String) -> Bool {
+        let today = Calendar.current.startOfDay(for: Date())
         
-        // Parse symptoms from LLM response
-        // IMPORTANT: Only accept symptom names from the predefined list to prevent invalid entries
-        var detectedSymptoms: [String] = []
-        var symptomData: [String: (isPresent: Bool, severity: Int16?)] = [:]
-        let validSymptomNames = Set(LocalLLMProcessor.allSymptoms)
+        // Get existing sets for today to calculate next set number
+        let fetchRequest: NSFetchRequest<ExerciseSet> = ExerciseSet.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "date >= %@", today as NSDate)
         
-        for (symptomName, value) in symptomsDict {
-            // Filter out any symptom names not in the predefined list
-            guard validSymptomNames.contains(symptomName) else {
-                print("⚠️ Ignoring invalid symptom name from LLM: '\(symptomName)'")
+        var maxSetNumber = 0
+        do {
+            let existingSets = try viewContext.fetch(fetchRequest)
+            maxSetNumber = existingSets.map { Int($0.setNumber) }.max() ?? 0
+        } catch {
+            print("⚠️ Error fetching existing sets: \(error)")
+        }
+        
+        let validExercises = Set(LocalLLMProcessor.allExercises)
+        var savedCount = 0
+        var currentSetNumber = maxSetNumber
+        
+        for setDict in setsArray {
+            guard let exerciseName = setDict["exerciseName"] as? String,
+                  validExercises.contains(exerciseName) else {
+                print("⚠️ Ignoring invalid exercise name")
                 continue
             }
             
-            if let symptomInfo = value as? [String: Any] {
-                let isPresent = symptomInfo["isPresent"] as? Bool ?? false
-                var severity: Int16? = nil
-                if let severityValue = symptomInfo["severity"] as? Int {
-                    severity = Int16(severityValue)
-                } else if let severityValue = symptomInfo["severity"] as? Int64 {
-                    severity = Int16(severityValue)
-                }
-                symptomData[symptomName] = (isPresent: isPresent, severity: severity)
-                if isPresent {
-                    detectedSymptoms.append(symptomName)
-                }
-            }
-        }
-        
-        // Create summary from detected symptoms
-        if detectedSymptoms.isEmpty {
-            newNote.summary = "No symptoms detected"
-        } else {
-            newNote.summary = detectedSymptoms.prefix(3).joined(separator: ", ")
-            if detectedSymptoms.count > 3 {
-                newNote.summary! += ", ..."
-            }
-        }
-        
-        // Create Symptom entries for ALL symptoms from allSymptoms list
-        // This ensures every symptom card is tracked for each recording
-        for symptomName in LocalLLMProcessor.allSymptoms {
-            let symptomEntry = Symptom(context: viewContext)
-            symptomEntry.note = newNote
-            symptomEntry.date = newNote.date
-            symptomEntry.symptomName = symptomName
+            // If LLM provided set number, use it (but ensure it's at least maxSetNumber + 1)
+            // Otherwise, increment from maxSetNumber
+            currentSetNumber += 1
+            let llmSetNumber = setDict["setNumber"] as? Int
+            let finalSetNumber = llmSetNumber != nil ? max(currentSetNumber, llmSetNumber!) : currentSetNumber
             
-            if let data = symptomData[symptomName] {
-                // Symptom was detected by LLM
-                symptomEntry.isPresent = data.isPresent
-                symptomEntry.severity = data.severity ?? 0  // 0 means null/not specified
-            } else {
-                // Symptom was not detected/mentioned by LLM
-                symptomEntry.isPresent = false
-                symptomEntry.severity = 0  // 0 means null/not detected
-            }
+            let exerciseSet = ExerciseSet(context: viewContext)
+            exerciseSet.date = Date()
+            exerciseSet.exerciseName = exerciseName
+            exerciseSet.setNumber = Int32(finalSetNumber)
+            exerciseSet.reps = Int32((setDict["reps"] as? Int) ?? 0)
+            exerciseSet.hasPain = (setDict["hasPain"] as? Bool) ?? true // Default to true if not clarified
+            
+            currentSetNumber = finalSetNumber
+            savedCount += 1
         }
         
         do {
             try viewContext.save()
-            print("✅ Note and \(LocalLLMProcessor.allSymptoms.count) symptoms saved successfully")
+            print("✅ Saved \(savedCount) exercise sets successfully")
+            return true
+        } catch {
+            print("❌ Save error: \(error)")
+            return false
+        }
+    }
+    
+    private func saveKOOSJR(_ responsesDict: [String: Any], transcribedText: String) -> Bool {
+        let koosJR = KOOSJRResponse(context: viewContext)
+        koosJR.date = Date()
+        
+        // Extract responses (default to 0 if not found)
+        koosJR.stiffnessAfterWaking = Int16((responsesDict["stiffnessAfterWaking"] as? Int) ?? 0)
+        koosJR.twistingPivotingPain = Int16((responsesDict["twistingPivotingPain"] as? Int) ?? 0)
+        koosJR.straighteningKneeFully = Int16((responsesDict["straighteningKneeFully"] as? Int) ?? 0)
+        koosJR.goingUpDownStairs = Int16((responsesDict["goingUpDownStairs"] as? Int) ?? 0)
+        koosJR.standingUpright = Int16((responsesDict["standingUpright"] as? Int) ?? 0)
+        koosJR.risingFromSitting = Int16((responsesDict["risingFromSitting"] as? Int) ?? 0)
+        koosJR.bendingToFloor = Int16((responsesDict["bendingToFloor"] as? Int) ?? 0)
+        
+        // Calculate raw score (sum of all 7 items)
+        let rawScore = koosJR.stiffnessAfterWaking +
+                      koosJR.twistingPivotingPain +
+                      koosJR.straighteningKneeFully +
+                      koosJR.goingUpDownStairs +
+                      koosJR.standingUpright +
+                      koosJR.risingFromSitting +
+                      koosJR.bendingToFloor
+        
+        koosJR.rawScore = rawScore
+        
+        // Calculate transformed score (0-100, higher = better)
+        koosJR.transformedScore = LocalLLMProcessor.calculateKOOSJRScore(rawScore: rawScore)
+        
+        do {
+            try viewContext.save()
+            print("✅ KOOS JR response saved successfully (raw score: \(rawScore), transformed: \(koosJR.transformedScore))")
             return true
         } catch {
             print("❌ Save error: \(error)")

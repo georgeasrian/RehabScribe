@@ -5,37 +5,31 @@ class LocalLLMProcessor {
     static let shared = LocalLLMProcessor()
     private var llm: LLM?
     
-    // All 25 cardiac symptoms
-    static let allSymptoms = [
-        "Chest pain at rest",
-        "Chest pain on exertion",
-        "Chest discomfort",
-        "Palpitations",
-        "Fatigue at rest",
-        "Exertional fatigue",
-        "Dyspnea",
-        "Orthopnea",
-        "Paroxysmal nocturnal dyspnea",
-        "Syncope",
-        "Lightheadedness",
-        "Peripheral edema",
-        "Cough / wheezing",
-        "Abdominal pain",
-        "Early satiety",
-        "Diaphoresis",
-        "Nausea / vomiting",
-        "Anxiety / restlessness",
-        "Feeling irregularity of HR",
-        "Pulse deficit",
-        "Tachycardia",
-        "Bradycardia",
-        "Dizziness at rest",
-        "Dizziness upon standing",
-        "Nocturia"
+    // Exercise names (normalized/cleaned up)
+    static let allExercises = [
+        "Supine Heel Slides",
+        "Supine Hamstring Stretch",
+        "Long Sitting Calf Stretch",
+        "Quad Sets",
+        "Sit-to-Stands",
+        "Goblet Squats",
+        "Step-Ups / Step-Downs",
+        "Machine Leg Press"
+    ]
+    
+    // KOOS JR questions
+    static let koosJRQuestions = [
+        "stiffnessAfterWaking": "Stiffness in your knee after wakening",
+        "twistingPivotingPain": "Twisting/pivoting on your knee",
+        "straighteningKneeFully": "Straightening your knee fully",
+        "goingUpDownStairs": "Going up or down stairs",
+        "standingUpright": "Standing upright",
+        "risingFromSitting": "Rising from sitting",
+        "bendingToFloor": "Bending to floor/picking up an object"
     ]
     
     private let systemPrompt = """
-    You extract symptoms from medical notes and output only JSON.
+    You extract exercise data and KOOS JR questionnaire responses from speech transcripts and output only JSON.
     """
     
     private init() {
@@ -59,8 +53,8 @@ class LocalLLMProcessor {
         print("Phi-2 model loaded successfully")
     }
     
-    /// Analyzes transcript and returns JSON with detected symptoms
-    func analyzeText(_ transcript: String, completion: @escaping (String?) -> Void) {
+    /// Analyzes exercise transcript and returns JSON with detected exercise sets
+    func analyzeExerciseText(_ transcript: String, completion: @escaping (String?) -> Void) {
         // Reload model to reset state
         loadModel()
         
@@ -70,7 +64,7 @@ class LocalLLMProcessor {
             return
         }
         
-        let userMessage = buildPrompt(transcript: transcript)
+        let userMessage = buildExercisePrompt(transcript: transcript)
         
         Task.detached {
             let inputSeq = llm.preprocess(userMessage, [])
@@ -92,44 +86,127 @@ class LocalLLMProcessor {
         }
     }
     
-    private func buildPrompt(transcript: String) -> String {
-        let symptomsList = LocalLLMProcessor.allSymptoms.map { "\"\($0)\"" }.joined(separator: ", ")
+    /// Analyzes KOOS JR questionnaire transcript and returns JSON with structured answers
+    func analyzeKOOSJRText(_ transcript: String, completion: @escaping (String?) -> Void) {
+        // Reload model to reset state
+        loadModel()
+        
+        guard let llm = llm else {
+            print("LLM not yet loaded")
+            completion(nil)
+            return
+        }
+        
+        let userMessage = buildKOOSJRPrompt(transcript: transcript)
+        
+        Task.detached {
+            let inputSeq = llm.preprocess(userMessage, [])
+            let rawOutput = await llm.getCompletion(from: inputSeq)
+            
+            print("=== RAW LLM OUTPUT (KOOS JR) ===")
+            print(rawOutput)
+            print("=================================")
+            
+            let cleanedOutput = self.extractValidJSON(from: rawOutput)
+            
+            print("=== CLEANED JSON (KOOS JR) ===")
+            print(cleanedOutput ?? "nil")
+            print("==============================")
+            
+            DispatchQueue.main.async {
+                completion(cleanedOutput)
+            }
+        }
+    }
+    
+    private func buildExercisePrompt(transcript: String) -> String {
+        let exercisesList = LocalLLMProcessor.allExercises.map { "\"\($0)\"" }.joined(separator: ", ")
         return """
-        Task: Read the patient note and extract cardiac symptoms with their severity (1-10 scale, where 1 is mild and 10 is severe).
-        Output ONLY valid JSON. No explanations.
+        Task: Extract exercise data from a rehabilitation session transcript. Output ONLY valid JSON. No explanations.
         
         CRITICAL RULES:
-        1. You MUST ONLY use symptom names from the predefined list below. NEVER create new symptom names.
-        2. Phrases like "seven out of ten", "8/10", "rating it 5", etc. are SEVERITY RATINGS, NOT symptom names.
-        3. Map natural language descriptions to the exact symptom names from the list (e.g., "chest pain" → "Chest pain at rest" or "Chest pain on exertion").
-        4. Extract severity numbers from phrases like "seven out of ten" = 7, "8/10" = 8, "rating it 5" = 5.
+        1. You MUST ONLY use exercise names from the predefined list below. Map variations to canonical names:
+           - "heel slides" or "supine heel slides" → "Supine Heel Slides"
+           - "hamstring stretch" → "Supine Hamstring Stretch"
+           - "calf stretch" or "long sitting calf stretch" → "Long Sitting Calf Stretch"
+           - "quad sets" or "quadriceps sets" → "Quad Sets"
+           - "sit to stands" or "sit-to-stand" → "Sit-to-Stands"
+           - "goblet squats" → "Goblet Squats"
+           - "step ups" or "step downs" or "step ups step downs" → "Step-Ups / Step-Downs"
+           - "leg press" or "machine leg press" → "Machine Leg Press"
         
-        For each symptom that is mentioned, include:
-        - "isPresent": true
-        - "severity": a number from 1-10 (or null if severity cannot be determined)
+        2. For each set mentioned, extract:
+           - exerciseName: normalized exercise name from list
+           - setNumber: integer representing set number (increment for same exercise)
+           - reps: integer number of repetitions
+           - hasPain: boolean (true if pain/discomfort mentioned, false if explicitly "no pain"/"no discomfort", or default to true if not clarified)
         
-        For symptoms NOT mentioned, do NOT include them in the output (they will be marked as absent automatically).
+        3. If user says "pain on all sets" or doesn't clarify pain for a set, assume hasPain = true for that set.
         
-        Available symptoms to check (USE ONLY THESE EXACT NAMES):
-        [\(symptomsList)]
+        4. Output format: An array of objects, each representing one set:
+        [
+          {"exerciseName": "Supine Heel Slides", "setNumber": 1, "reps": 10, "hasPain": false},
+          {"exerciseName": "Supine Heel Slides", "setNumber": 2, "reps": 10, "hasPain": true}
+        ]
+        
+        Available exercises (USE ONLY THESE EXACT NAMES):
+        [\(exercisesList)]
         
         Example:
-        Patient note: "I just had chest pain seven out of ten"
+        Transcript: "Supine heel slides, set one, ten reps, no discomfort. Supine heel slides set two ten reps still a little twinge. Quad sets, set one, fifteen reps pain."
         JSON output:
-        {"Chest pain at rest": {"isPresent": true, "severity": 7}}
+        [{"exerciseName": "Supine Heel Slides", "setNumber": 1, "reps": 10, "hasPain": false}, {"exerciseName": "Supine Heel Slides", "setNumber": 2, "reps": 10, "hasPain": true}, {"exerciseName": "Quad Sets", "setNumber": 1, "reps": 15, "hasPain": true}]
+        
+        Now extract exercise data from this transcript:
+        "\(transcript)"
+        JSON output:
+        """
+    }
+    
+    private func buildKOOSJRPrompt(transcript: String) -> String {
+        return """
+        Task: Extract KOOS JR questionnaire responses from a patient's unstructured speech. Output ONLY valid JSON. No explanations.
+        
+        KOOS JR is a 7-item questionnaire. Each question is answered on a 5-point Likert scale:
+        0 = None, 1 = Mild, 2 = Moderate, 3 = Severe, 4 = Extreme
+        
+        The 7 questions are:
+        1. Stiffness in your knee after wakening (stiffnessAfterWaking)
+        2. Twisting/pivoting on your knee (twistingPivotingPain)
+        3. Straightening your knee fully (straighteningKneeFully)
+        4. Going up or down stairs (goingUpDownStairs)
+        5. Standing upright (standingUpright)
+        6. Rising from sitting (risingFromSitting)
+        7. Bending to floor/picking up an object (bendingToFloor)
+        
+        CRITICAL RULES:
+        1. Map natural language to Likert scale values:
+           - "none", "no", "nothing" → 0
+           - "mild", "slight", "minimal", "a little" → 1
+           - "moderate", "medium", "some" → 2
+           - "severe", "bad", "very", "significant" → 3
+           - "extreme", "worst", "terrible", "unbearable" → 4
+        
+        2. Extract answers from unstructured speech. If not mentioned, use 0 as default.
+        
+        3. Output format: A single JSON object with all 7 fields:
+        {
+          "stiffnessAfterWaking": 2,
+          "twistingPivotingPain": 3,
+          "straighteningKneeFully": 2,
+          "goingUpDownStairs": 3,
+          "standingUpright": 1,
+          "risingFromSitting": 1,
+          "bendingToFloor": 2
+        }
         
         Example:
-        Patient note: "I felt severe chest pain while resting, rating it 8 out of 10, and had mild dizziness when I stood up, maybe a 3"
+        Transcript: "My knee stiffness after waking in the morning is moderate. Twisting or pivoting on my knee gives me severe pain. Straightening my knee fully is moderate pain. Going up or down stairs is severe. Standing upright minimal pain. Rising from sitting is mild difficulty. Bending to the floor or picking up an object is moderate."
         JSON output:
-        {"Chest pain at rest": {"isPresent": true, "severity": 8}, "Dizziness upon standing": {"isPresent": true, "severity": 3}}
+        {"stiffnessAfterWaking": 2, "twistingPivotingPain": 3, "straighteningKneeFully": 2, "goingUpDownStairs": 3, "standingUpright": 1, "risingFromSitting": 1, "bendingToFloor": 2}
         
-        Example:
-        Patient note: "Some chest discomfort when walking, not too bad"
-        JSON output:
-        {"Chest pain on exertion": {"isPresent": true, "severity": null}, "Chest discomfort": {"isPresent": true, "severity": null}}
-        
-        That was just the example. Now do that process, but for this task:
-        Patient note: "\(transcript)"
+        Now extract KOOS JR responses from this transcript:
+        "\(transcript)"
         JSON output:
         """
     }
@@ -144,23 +221,36 @@ class LocalLLMProcessor {
             return "{}"
         }
         
-        // Look for JSON object starting with '{'
-        guard let startIdx = trimmed.firstIndex(of: "{") else {
-            print("⚠️ No JSON object found in output, returning empty JSON")
+        // Look for JSON object/array starting with '{' or '['
+        let startChar: Character
+        var endChar: Character
+        
+        if let objIdx = trimmed.firstIndex(of: "{") {
+            startChar = "{"
+            endChar = "}"
+        } else if let arrIdx = trimmed.firstIndex(of: "[") {
+            startChar = "["
+            endChar = "]"
+        } else {
+            print("⚠️ No JSON object/array found in output, returning empty JSON")
             print("Raw output: \(trimmed)")
+            return "{}"
+        }
+        
+        guard let startIdx = trimmed.firstIndex(of: startChar) else {
             return "{}"
         }
         
         var braceCount = 0
         var endIdx: String.Index? = nil
         
-        // Find matching closing brace
+        // Find matching closing brace/bracket
         for idx in trimmed[startIdx...].indices {
             let char = trimmed[idx]
-            if char == "{" { 
-                braceCount += 1 
-            } else if char == "}" { 
-                braceCount -= 1 
+            if char == startChar {
+                braceCount += 1
+            } else if char == endChar {
+                braceCount -= 1
                 if braceCount == 0 {
                     endIdx = idx
                     break
@@ -184,24 +274,9 @@ class LocalLLMProcessor {
                 partial = String(partial.dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
             }
             
-            // Remove any trailing invalid characters before the closing brace
-            while !partial.isEmpty && partial.last != "}" && partial.last != "{" {
-                let lastChar = partial.last!
-                if lastChar != "," && lastChar != "\n" && lastChar != "\r" && lastChar != " " && lastChar != "\t" {
-                    // Check if it's part of a valid JSON value
-                    if !lastChar.isLetter && !lastChar.isNumber && lastChar != "\"" && lastChar != "'" && lastChar != ":" {
-                        partial = String(partial.dropLast())
-                    } else {
-                        break
-                    }
-                } else {
-                    partial = String(partial.dropLast())
-                }
-            }
-            
             // Add missing closing brace(s) based on brace count
             while braceCount > 0 {
-                partial += "}"
+                partial += String(endChar)
                 braceCount -= 1
             }
             
@@ -233,5 +308,15 @@ class LocalLLMProcessor {
         // Fallback: return empty JSON object
         print("⚠️ Could not convert to data, returning empty JSON")
         return "{}"
+    }
+    
+    // Calculate KOOS JR transformed score (0-100, higher = better)
+    static func calculateKOOSJRScore(rawScore: Int16) -> Double {
+        // KOOS JR transformation: score = 100 - (rawScore * 100 / 28)
+        // Raw score range: 0-28 (7 items * 4 max)
+        if rawScore == 0 {
+            return 100.0
+        }
+        return 100.0 - (Double(rawScore) * 100.0 / 28.0)
     }
 }
