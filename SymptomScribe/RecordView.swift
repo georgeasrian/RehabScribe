@@ -75,7 +75,7 @@ struct RecordView: View {
                             • Exercise name (e.g., "Supine heel slides", "Quad sets")
                             • Set number and number of reps
                             • Any pain or discomfort
-            
+                            
                             Example: "Supine heel slides, set one, ten reps, no discomfort. Set two, ten reps, slight pain."
                             """)
                             .font(.subheadline)
@@ -93,7 +93,7 @@ struct RecordView: View {
                             5. Standing upright
                             6. Rising from sitting
                             7. Bending to floor/picking up object
-            
+                            
                             For each, say: None, Mild, Moderate, Severe, or Extreme
                             You can speak freely about all questions.
                             """)
